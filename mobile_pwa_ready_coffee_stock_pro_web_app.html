@@ -1,0 +1,3320 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#8A5022" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Coffee Stock" />
+  <title>Coffee Stock Pro — ระบบบริหารสต็อกและต้นทุนร้านกาแฟ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            espresso: {
+              DEFAULT: '#8A5022',
+              dark: '#5B412F',
+              light: '#A86734',
+            },
+            roast: '#5B412F',
+            cream: '#FFF8F5',
+            peach: '#FBEBE2',
+            latte: '#F5E6DC',
+          },
+          fontFamily: {
+            sans: ['"Noto Sans Thai"', '"Inter"', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            card: '0 4px 20px -4px rgba(91, 65, 47, 0.08), 0 1px 4px -1px rgba(91, 65, 47, 0.04)',
+            soft: '0 2px 10px -2px rgba(91, 65, 47, 0.06)',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      background-color: #FFF8F5;
+      color: #3B281C;
+      font-family: 'Noto Sans Thai', 'Inter', system-ui, sans-serif;
+      -webkit-tap-highlight-color: rgba(138, 80, 34, 0.14);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FBEBE2;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #C9A385;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #8A5022;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-[#3B281C] selection:bg-peach selection:text-roast">
+
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-peach shadow-soft">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <button
+          id="mobile-menu-btn"
+          type="button"
+          aria-label="เปิดเมนู"
+          class="lg:hidden p-2.5 rounded-xl bg-peach text-roast hover:bg-latte transition active:scale-95"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <div class="w-10 h-10 rounded-xl bg-espresso text-white flex items-center justify-center shrink-0 shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8h1a4 4 0 110 8h-1M3 8h14v9a4 4 0 01-4 4H7a4 4 0 01-4-4V8zM6 2v2M10 2v2M14 2v2" />
+          </svg>
+        </div>
+        <div class="truncate">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-roast truncate">Coffee Stock Pro</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-peach text-espresso border border-espresso/15">
+              Specialty Roastery OS
+            </span>
+          </div>
+          <p class="text-xs text-roast/70 truncate">ระบบบริหารสต็อก ต้นทุนต่อแก้ว และตัดสต็อกยอดขายอัตโนมัติ</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          id="btn-open-sheets-modal"
+          type="button"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-cream hover:bg-peach text-roast border border-espresso/20 transition shadow-2xs"
+          title="ตั้งค่าการเชื่อมต่อและซิงก์ Google Sheets"
+        >
+          <span id="sheets-status-dot" class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+          <span id="sheets-status-label" class="hidden sm:inline">Sheets: ไม่ได้ตั้งค่า</span>
+          <span class="sm:hidden">Sheets</span>
+          <span
+            id="sheets-queue-badge"
+            class="hidden px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 tabular-nums"
+          >0</span>
+        </button>
+
+        <button
+          id="btn-export-csv"
+          type="button"
+          class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-peach/80 hover:bg-peach text-roast border border-espresso/15 transition"
+          title="ส่งออกสต็อกเป็นไฟล์ CSV"
+        >
+          <svg class="w-4 h-4 text-espresso" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>CSV</span>
+        </button>
+
+        <button
+          id="btn-export-json"
+          type="button"
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-peach/80 hover:bg-peach text-roast border border-espresso/15 transition"
+          title="สำรองข้อมูลทั้งหมดเป็น JSON"
+        >
+          <svg class="w-4 h-4 text-espresso" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Export JSON</span>
+        </button>
+
+        <label
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-cream text-roast border border-espresso/20 cursor-pointer transition"
+          title="นำเข้าข้อมูลจากไฟล์ JSON"
+        >
+          <svg class="w-4 h-4 text-espresso" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>Import</span>
+          <input id="input-import-json" type="file" accept=".json,application/json" class="hidden" />
+        </label>
+
+        <button
+          id="btn-reset-demo"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition active:scale-95"
+          title="รีเซ็ตข้อมูลตัวอย่างเริ่มต้น"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span class="hidden sm:inline">รีเซ็ตข้อมูล</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 max-w-[1440px] w-full mx-auto flex relative">
+    <div id="mobile-backdrop" class="fixed inset-0 bg-roast/40 backdrop-blur-[1px] z-30 hidden lg:hidden"></div>
+
+    <aside
+      id="sidebar"
+      class="fixed lg:static inset-y-0 left-0 z-40 w-72 lg:w-64 shrink-0 bg-white lg:bg-transparent border-r lg:border-r-0 border-peach transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out pt-4 lg:py-6 px-4 flex flex-col justify-between overflow-y-auto"
+    >
+      <div>
+        <div class="flex items-center justify-between lg:hidden pb-3 mb-3 border-b border-peach">
+          <span class="font-bold text-roast text-sm">เมนูระบบปฏิบัติการ</span>
+          <button id="close-sidebar-btn" type="button" class="p-1.5 rounded-lg text-roast hover:bg-peach">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <p class="px-3 text-[11px] font-bold uppercase tracking-wider text-roast/55 mb-2">6 โมดูลหลัก</p>
+        <nav id="nav-tabs" class="space-y-1.5" aria-label="Primary Tabs"></nav>
+
+        <div class="mt-6 pt-4 border-t border-peach space-y-2 sm:hidden">
+          <p class="px-2 text-[11px] font-bold uppercase tracking-wider text-roast/55">จัดการไฟล์ข้อมูล</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="mobile-export-csv" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold bg-peach text-roast text-center">
+              Export CSV
+            </button>
+            <button id="mobile-export-json" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold bg-peach text-roast text-center">
+              Export JSON
+            </button>
+          </div>
+          <label class="block w-full px-3 py-2 rounded-xl text-xs font-semibold bg-cream border border-espresso/20 text-roast text-center cursor-pointer">
+            Import JSON
+            <input id="mobile-import-json" type="file" accept=".json,application/json" class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <div class="mt-6 p-4 rounded-2xl bg-peach/70 border border-espresso/15 text-xs space-y-1.5">
+        <div class="flex items-center justify-between font-semibold text-roast">
+          <span>สถานะบันทึกข้อมูล</span>
+          <span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+            Auto-Saved
+          </span>
+        </div>
+        <p class="text-roast/75 leading-relaxed">
+          อัปเดตตรงเข้า 6 ชีทเดิมใน Google Sheets และเก็บสำรองบนเบราว์เซอร์ (localStorage)
+        </p>
+        <p id="last-updated-label" class="text-[11px] text-espresso font-medium pt-1 tabular-nums"></p>
+      </div>
+    </aside>
+
+    <main class="flex-1 min-w-0 py-6 px-4 sm:px-6 lg:pr-8 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 id="view-title" class="text-xl sm:text-2xl font-bold text-roast tracking-tight">ภาพรวมสต็อก</h2>
+          <p id="view-subtitle" class="text-sm text-roast/70 mt-0.5">สรุปสถานะคลังสินค้า มูลค่าสต็อก จุดสั่งซื้อด่วน และกำไรขั้นต้นเฉลี่ย</p>
+        </div>
+        <div id="view-header-actions" class="flex items-center gap-2 shrink-0"></div>
+      </div>
+
+      <section id="view-dashboard" class="space-y-6"></section>
+      <section id="view-inventory" class="hidden space-y-6"></section>
+      <section id="view-movement" class="hidden space-y-6"></section>
+      <section id="view-daily-count" class="hidden space-y-6"></section>
+      <section id="view-recipes" class="hidden space-y-6"></section>
+      <section id="view-sales" class="hidden space-y-6"></section>
+    </main>
+  </div>
+
+  <!-- Quick Reorder / Stock-In Modal -->
+  <div id="quick-reorder-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-roast/50 backdrop-blur-[2px] p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-peach space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-peach text-espresso mb-1">รับเข้าสต็อกด่วน (Quick Stock-In)</span>
+          <h3 id="reorder-modal-title" class="text-lg font-bold text-roast">รับวัตถุดิบเข้าคลัง</h3>
+          <p id="reorder-modal-subtitle" class="text-xs text-roast/70"></p>
+        </div>
+        <button id="close-reorder-modal" type="button" class="p-1.5 rounded-lg text-roast/60 hover:text-roast hover:bg-peach">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="quick-reorder-form" class="space-y-3.5">
+        <input type="hidden" id="reorder-sku" />
+        <div>
+          <label class="block text-xs font-semibold text-roast mb-1">จำนวนที่รับเข้า (<span id="reorder-unit-label">หน่วย</span>)</label>
+          <input
+            id="reorder-qty"
+            type="number"
+            step="any"
+            min="0.01"
+            required
+            class="w-full px-3.5 py-2.5 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm font-semibold tabular-nums"
+          />
+          <p class="text-[11px] text-roast/65 mt-1">แนะนำสั่งเพิ่ม: <span id="reorder-rec-text" class="font-semibold text-espresso"></span></p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">ต้นทุนต่อหน่วย (฿)</label>
+            <input
+              id="reorder-unit-cost"
+              type="number"
+              step="any"
+              min="0"
+              required
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">ผู้บันทึก</label>
+            <input
+              id="reorder-staff"
+              type="text"
+              value="พี่บาร์ / ผู้จัดการ"
+              required
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-roast mb-1">หมายเหตุ / เลขที่บิล</label>
+          <input
+            id="reorder-note"
+            type="text"
+            placeholder="เช่น สั่งเติมตาม Reorder List"
+            class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+          />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-reorder-modal" class="px-4 py-2 rounded-xl text-xs font-semibold bg-peach text-roast hover:bg-latte transition">
+            ยกเลิก
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition">
+            ยืนยันรับเข้าสต็อก
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add / Edit SKU Modal -->
+  <div id="sku-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-roast/50 backdrop-blur-[2px] p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-peach space-y-4 my-8">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 id="sku-modal-title" class="text-lg font-bold text-roast">เพิ่มวัตถุดิบใหม่ (SKU)</h3>
+          <p class="text-xs text-roast/70">กำหนดหน่วยนับสต็อกหลัก ต้นทุน และจุดสั่งซื้อขั้นต่ำ (Par Level)</p>
+        </div>
+        <button id="close-sku-modal" type="button" class="p-1.5 rounded-lg text-roast/60 hover:text-roast hover:bg-peach">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="sku-form" class="space-y-3.5">
+        <input type="hidden" id="sku-edit-mode" value="add" />
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">รหัส SKU *</label>
+            <input
+              id="sku-code"
+              type="text"
+              required
+              placeholder="เช่น BEAN-ESP-02"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm font-mono uppercase"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">หมวดหมู่ *</label>
+            <select
+              id="sku-category"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            >
+              <option value="เมล็ดกาแฟ">เมล็ดกาแฟ</option>
+              <option value="นมและผลิตภัณฑ์นม">นมและผลิตภัณฑ์นม</option>
+              <option value="ไซรัปและซอส">ไซรัปและซอส</option>
+              <option value="ชาและผงชง">ชาและผงชง</option>
+              <option value="บรรจุภัณฑ์">บรรจุภัณฑ์</option>
+              <option value="อุปกรณ์ทำความสะอาด">อุปกรณ์ทำความสะอาด</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-roast mb-1">ชื่อวัตถุดิบ *</label>
+          <input
+            id="sku-name"
+            type="text"
+            required
+            placeholder="เช่น เมล็ดกาแฟคั่วเข้ม House Blend 1kg"
+            class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">หน่วยสต็อกหลัก *</label>
+            <input
+              id="sku-unit"
+              type="text"
+              required
+              placeholder="เช่น ถุง (1,000g)"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">ต้นทุนต่อหน่วย (฿) *</label>
+            <input
+              id="sku-cost"
+              type="number"
+              step="any"
+              min="0"
+              required
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">สต็อกยกมา *</label>
+            <input
+              id="sku-opening"
+              type="number"
+              step="any"
+              min="0"
+              required
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">Par Level (จุดสั่งซื้อ) *</label>
+            <input
+              id="sku-par"
+              type="number"
+              step="any"
+              min="0"
+              required
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">สต็อกเป้าหมาย (Target)</label>
+            <input
+              id="sku-target"
+              type="number"
+              step="any"
+              min="0"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">ซัพพลายเออร์</label>
+            <input
+              id="sku-supplier"
+              type="text"
+              placeholder="เช่น Roastery Lab TH"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-sku-modal" class="px-4 py-2 rounded-xl text-xs font-semibold bg-peach text-roast hover:bg-latte transition">
+            ยกเลิก
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition">
+            บันทึก SKU
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Menu Modal -->
+  <div id="menu-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-roast/50 backdrop-blur-[2px] p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-peach space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-bold text-roast">สร้างเมนูเครื่องดื่มใหม่</h3>
+          <p class="text-xs text-roast/70">กำหนดรหัสเมนู ชื่อเมนู และราคาขายหน้าร้าน</p>
+        </div>
+        <button id="close-menu-modal" type="button" class="p-1.5 rounded-lg text-roast/60 hover:text-roast hover:bg-peach">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="menu-form" class="space-y-3.5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">รหัสเมนู *</label>
+            <input
+              id="new-menu-id"
+              type="text"
+              required
+              placeholder="เช่น M07"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm font-mono uppercase"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-roast mb-1">หมวดหมู่เมนู</label>
+            <select
+              id="new-menu-cat"
+              class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            >
+              <option value="Espresso Bar">Espresso Bar</option>
+              <option value="Signature & Milk">Signature & Milk</option>
+              <option value="Matcha & Tea">Matcha & Tea</option>
+              <option value="Non-Coffee">Non-Coffee</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-roast mb-1">ชื่อเมนู *</label>
+          <input
+            id="new-menu-name"
+            type="text"
+            required
+            placeholder="เช่น Dirty Coffee / Coconut Americano"
+            class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-roast mb-1">ราคาขายต่อแก้ว (฿) *</label>
+          <input
+            id="new-menu-price"
+            type="number"
+            step="1"
+            min="1"
+            required
+            value="85"
+            class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm font-bold tabular-nums"
+          />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="cancel-menu-modal" class="px-4 py-2 rounded-xl text-xs font-semibold bg-peach text-roast hover:bg-latte transition">
+            ยกเลิก
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition">
+            สร้างเมนู
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Google Sheets Sync & Apps Script Modal -->
+  <div id="sheets-sync-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-roast/50 backdrop-blur-[2px] p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-peach space-y-4 my-8">
+      <div class="flex items-start justify-between gap-3 pb-3 border-b border-peach">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-bold text-roast">เชื่อมต่อ Google Sheets (6 ชีทเดิม)</h3>
+            <span id="modal-sync-status-pill" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+              ไม่ได้ตั้งค่า (Local)
+            </span>
+          </div>
+          <p class="text-xs text-roast/70 mt-0.5">อัปเดตและต่อแถวลงใน 6 ชีทที่มีอยู่โดยตรงโดยไม่สร้างชีทสำรองเพิ่มเติม</p>
+        </div>
+        <button id="close-sheets-modal" type="button" aria-label="ปิดหน้าต่าง" class="p-1.5 rounded-lg text-roast/60 hover:text-roast hover:bg-peach">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="sheets-tab-settings" type="button" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-espresso text-white transition">
+          ตั้งค่า URL & ซิงก์ข้อมูล
+        </button>
+        <button id="sheets-tab-script" type="button" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-peach/70 text-roast hover:bg-peach transition">
+          โค้ด Apps Script (6 ชีทเท่านั้น)
+        </button>
+      </div>
+
+      <div id="sheets-panel-settings" class="space-y-4">
+        <div>
+          <label for="sheets-webapp-url" class="block text-xs font-semibold text-roast mb-1">Google Apps Script Web App URL (/exec)</label>
+          <input
+            id="sheets-webapp-url"
+            type="url"
+            placeholder="https://script.google.com/macros/s/....../exec"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-xs sm:text-sm font-mono"
+          />
+        </div>
+
+        <label class="flex items-center gap-2.5 text-xs sm:text-sm text-roast cursor-pointer select-none">
+          <input
+            id="sheets-autosync-toggle"
+            type="checkbox"
+            checked
+            class="w-4 h-4 rounded border-espresso/30 text-espresso focus:ring-espresso"
+          />
+          <span>ซิงก์ขึ้น 6 ชีทเดิมใน Google Sheets อัตโนมัติเมื่อมีการเพิ่ม/แก้ไข/ลบข้อมูล</span>
+        </label>
+
+        <label class="flex items-center gap-2.5 text-xs sm:text-sm text-roast cursor-pointer select-none">
+          <input
+            id="sheets-autopull-toggle"
+            type="checkbox"
+            checked
+            class="w-4 h-4 rounded border-espresso/30 text-espresso focus:ring-espresso"
+          />
+          <span>ดึงข้อมูลที่แก้/เพิ่มจาก Google Sheets เข้าหน้าเว็บอัตโนมัติเมื่อเปิดหน้าเว็บ</span>
+        </label>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-cream/80 border border-peach text-xs">
+          <div>
+            <div class="text-roast/60">สถานะปัจจุบัน</div>
+            <div id="detail-sync-status" class="font-bold text-roast mt-0.5">ไม่ได้ตั้งค่า (Local)</div>
+          </div>
+          <div>
+            <div class="text-roast/60">คิวรอซิงก์ (Offline Queue)</div>
+            <div id="detail-sync-queue" class="font-bold text-roast mt-0.5 tabular-nums">0 รายการ</div>
+          </div>
+          <div>
+            <div class="text-roast/60">ซิงก์สำเร็จล่าสุด</div>
+            <div id="detail-last-sync" class="font-bold text-roast mt-0.5 tabular-nums">ยังไม่เคยซิงก์สำเร็จ</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="btn-test-sheets" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-cream hover:bg-peach text-roast border border-espresso/20 transition">
+              ทดสอบเชื่อมต่อ (Ping)
+            </button>
+            <button type="button" id="btn-pull-sheets" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-peach hover:bg-latte text-roast border border-espresso/20 transition">
+              ดึงข้อมูลลงเว็บ (Pull)
+            </button>
+            <button type="button" id="btn-push-sheets" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-peach hover:bg-latte text-roast border border-espresso/20 transition">
+              ส่งข้อมูลขึ้น Sheets (Push)
+            </button>
+          </div>
+          <button type="button" id="btn-save-sheets-config" class="px-4 py-2 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition">
+            บันทึกการตั้งค่า
+          </button>
+        </div>
+      </div>
+
+      <div id="sheets-panel-script" class="hidden space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs text-roast/75">คัดลอกโค้ดด้านล่างไปวางใน <strong>Extensions &rarr; Apps Script</strong> แล้วกด Deploy เป็น Web app</p>
+          <button type="button" id="btn-copy-apps-script" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white transition shrink-0">
+            คัดลอกโค้ด
+          </button>
+        </div>
+        <pre id="apps-script-code-preview" class="p-3.5 rounded-xl bg-roast text-cream text-[11px] font-mono overflow-x-auto max-h-64 leading-relaxed"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'coffee_stock_pro_v1';
+
+    const CATEGORIES = [
+      'เมล็ดกาแฟ',
+      'นมและผลิตภัณฑ์นม',
+      'ไซรัปและซอส',
+      'ชาและผงชง',
+      'บรรจุภัณฑ์',
+      'อุปกรณ์ทำความสะอาด',
+    ];
+
+    function todayISO() {
+      const d = new Date();
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+    }
+
+    function formatTHB(num) {
+      const n = Number(num) || 0;
+      return '฿' + n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatQty(num) {
+      const n = Number(num) || 0;
+      return n.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+    }
+
+    function escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function createDefaultData() {
+      const t = todayISO();
+      return {
+        updatedAt: new Date().toISOString(),
+        activeTab: 'dashboard',
+        selectedMenuId: 'M01',
+        sheetsConfig: {
+          webAppUrl: '',
+          autoSync: true,
+          autoPullOnLoad: true,
+        },
+        syncQueue: [],
+        syncStatus: 'not_configured',
+        lastSyncAt: null,
+        inventory: [
+          {
+            sku: 'BEAN-ESP-01',
+            name: 'เมล็ดกาแฟ House Espresso Blend (คั่วกลาง-เข้ม)',
+            category: 'เมล็ดกาแฟ',
+            unit: 'ถุง (1,000g)',
+            costPerUnit: 580,
+            openingStock: 8,
+            parLevel: 4,
+            targetStock: 10,
+            supplier: 'Roastery Lab TH',
+          },
+          {
+            sku: 'BEAN-SO-01',
+            name: 'เมล็ดกาแฟ Single Origin Chiang Mai Washed',
+            category: 'เมล็ดกาแฟ',
+            unit: 'ถุง (500g)',
+            costPerUnit: 420,
+            openingStock: 2.5,
+            parLevel: 3,
+            targetStock: 6,
+            supplier: 'Doi Pangkhon Micro-Lot',
+          },
+          {
+            sku: 'MILK-WH-01',
+            name: 'นมสดพาสเจอไรซ์ Whole Milk',
+            category: 'นมและผลิตภัณฑ์นม',
+            unit: 'แกลลอน (2,000ml)',
+            costPerUnit: 92,
+            openingStock: 14,
+            parLevel: 8,
+            targetStock: 18,
+            supplier: 'Dairy Fresh Supply',
+          },
+          {
+            sku: 'MILK-OAT-01',
+            name: 'นมข้าวโอ๊ต Barista Oat Milk',
+            category: 'นมและผลิตภัณฑ์นม',
+            unit: 'กล่อง (1,000ml)',
+            costPerUnit: 115,
+            openingStock: 3,
+            parLevel: 5,
+            targetStock: 12,
+            supplier: 'PlantBarista Co.',
+          },
+          {
+            sku: 'MILK-CND-01',
+            name: 'นมข้นหวาน Sweetened Condensed Milk',
+            category: 'นมและผลิตภัณฑ์นม',
+            unit: 'กระป๋อง (2,000g)',
+            costPerUnit: 138,
+            openingStock: 6,
+            parLevel: 3,
+            targetStock: 8,
+            supplier: 'Siam Dairy Mart',
+          },
+          {
+            sku: 'SYR-VAN-01',
+            name: 'ไซรัปวานิลลา Vanilla Bean Syrup',
+            category: 'ไซรัปและซอส',
+            unit: 'ขวด (750ml)',
+            costPerUnit: 240,
+            openingStock: 4,
+            parLevel: 2,
+            targetStock: 6,
+            supplier: 'AromaCraft Beverage',
+          },
+          {
+            sku: 'SYR-CRM-01',
+            name: 'ซอสคาราเมล Caramel Sauce',
+            category: 'ไซรัปและซอส',
+            unit: 'ขวด (1,000ml)',
+            costPerUnit: 265,
+            openingStock: 1.5,
+            parLevel: 2,
+            targetStock: 5,
+            supplier: 'AromaCraft Beverage',
+          },
+          {
+            sku: 'TEA-MTC-01',
+            name: 'ผงมัทฉะ Ceremonial Uji Matcha',
+            category: 'ชาและผงชง',
+            unit: 'ถุง (500g)',
+            costPerUnit: 890,
+            openingStock: 2,
+            parLevel: 1.5,
+            targetStock: 4,
+            supplier: 'Kyoto Tea Direct',
+          },
+          {
+            sku: 'POW-COC-01',
+            name: 'ผงโกโก้แท้ 100% Dutch Cocoa',
+            category: 'ชาและผงชง',
+            unit: 'ถุง (1,000g)',
+            costPerUnit: 340,
+            openingStock: 4,
+            parLevel: 2,
+            targetStock: 6,
+            supplier: 'Cacao Studio',
+          },
+          {
+            sku: 'PKG-CUP-16',
+            name: 'ชุดแก้วพลาสติก 16oz + ฝา + หลอด (แพ็ก 50 ชุด)',
+            category: 'บรรจุภัณฑ์',
+            unit: 'แพ็ก (50 ชุด)',
+            costPerUnit: 125,
+            openingStock: 12,
+            parLevel: 6,
+            targetStock: 16,
+            supplier: 'EcoPack Bangkok',
+          },
+          {
+            sku: 'CLN-DET-01',
+            name: 'ผงล้างหัวชงเอสเปรสโซ่ Espresso Backflush Detergent',
+            category: 'อุปกรณ์ทำความสะอาด',
+            unit: 'กระปุก (900g)',
+            costPerUnit: 450,
+            openingStock: 2,
+            parLevel: 1,
+            targetStock: 3,
+            supplier: 'Barista Care Pro',
+          },
+        ],
+        movements: [
+          {
+            id: 'MOV-1001',
+            date: t,
+            type: 'รับเข้า',
+            sku: 'MILK-WH-01',
+            qty: 6,
+            unitCost: 92,
+            staff: 'นนท์ (Barista)',
+            note: 'รับนมสดรอบเช้า',
+          },
+          {
+            id: 'MOV-1002',
+            date: t,
+            type: 'เบิกใช้',
+            sku: 'PKG-CUP-16',
+            qty: 2,
+            unitCost: 125,
+            staff: 'มุก (Cashier)',
+            note: 'เติมชุดแก้วหน้าบาร์ช่วงเช้า',
+          },
+          {
+            id: 'MOV-1003',
+            date: t,
+            type: 'ของเสีย',
+            sku: 'MILK-OAT-01',
+            qty: 0.4,
+            unitCost: 115,
+            staff: 'นนท์ (Barista)',
+            note: 'สตีมนมล้นช่วงเร่งด่วน',
+          },
+        ],
+        dailyCounts: [
+          {
+            id: 'CNT-001',
+            date: t,
+            staff: 'นนท์ (Barista)',
+            items: [
+              { sku: 'BEAN-ESP-01', systemStock: 7.45, physicalStock: 7.4, variance: -0.05, varianceValue: -29 },
+              { sku: 'MILK-WH-01', systemStock: 16.5, physicalStock: 16.5, variance: 0, varianceValue: 0 },
+              { sku: 'MILK-OAT-01', systemStock: 2.3, physicalStock: 2.2, variance: -0.1, varianceValue: -11.5 },
+            ],
+          },
+        ],
+        recipes: [
+          {
+            menuId: 'M01',
+            menuName: 'Americano เย็น (House Blend)',
+            category: 'Espresso Bar',
+            sellingPrice: 65,
+            ingredients: [
+              { sku: 'BEAN-ESP-01', recipeQty: 18, unitLabel: 'g', packFactor: 1000 },
+              { sku: 'PKG-CUP-16', recipeQty: 1, unitLabel: 'ชุด', packFactor: 50 },
+            ],
+          },
+          {
+            menuId: 'M02',
+            menuName: 'Latte ร้อน / เย็น',
+            category: 'Espresso Bar',
+            sellingPrice: 75,
+            ingredients: [
+              { sku: 'BEAN-ESP-01', recipeQty: 18, unitLabel: 'g', packFactor: 1000 },
+              { sku: 'MILK-WH-01', recipeQty: 180, unitLabel: 'ml', packFactor: 2000 },
+              { sku: 'PKG-CUP-16', recipeQty: 1, unitLabel: 'ชุด', packFactor: 50 },
+            ],
+          },
+          {
+            menuId: 'M03',
+            menuName: 'Vanilla Oat Latte',
+            category: 'Signature & Milk',
+            sellingPrice: 95,
+            ingredients: [
+              { sku: 'BEAN-ESP-01', recipeQty: 18, unitLabel: 'g', packFactor: 1000 },
+              { sku: 'MILK-OAT-01', recipeQty: 180, unitLabel: 'ml', packFactor: 1000 },
+              { sku: 'SYR-VAN-01', recipeQty: 15, unitLabel: 'ml', packFactor: 750 },
+              { sku: 'PKG-CUP-16', recipeQty: 1, unitLabel: 'ชุด', packFactor: 50 },
+            ],
+          },
+          {
+            menuId: 'M04',
+            menuName: 'Caramel Macchiato',
+            category: 'Signature & Milk',
+            sellingPrice: 85,
+            ingredients: [
+              { sku: 'BEAN-ESP-01', recipeQty: 18, unitLabel: 'g', packFactor: 1000 },
+              { sku: 'MILK-WH-01', recipeQty: 160, unitLabel: 'ml', packFactor: 2000 },
+              { sku: 'SYR-CRM-01', recipeQty: 20, unitLabel: 'ml', packFactor: 1000 },
+              { sku: 'PKG-CUP-16', recipeQty: 1, unitLabel: 'ชุด', packFactor: 50 },
+            ],
+          },
+          {
+            menuId: 'M05',
+            menuName: 'Uji Matcha Latte',
+            category: 'Matcha & Tea',
+            sellingPrice: 105,
+            ingredients: [
+              { sku: 'TEA-MTC-01', recipeQty: 5, unitLabel: 'g', packFactor: 500 },
+              { sku: 'MILK-WH-01', recipeQty: 170, unitLabel: 'ml', packFactor: 2000 },
+              { sku: 'MILK-CND-01', recipeQty: 15, unitLabel: 'g', packFactor: 2000 },
+              { sku: 'PKG-CUP-16', recipeQty: 1, unitLabel: 'ชุด', packFactor: 50 },
+            ],
+          },
+          {
+            menuId: 'M06',
+            menuName: 'Dark Cocoa Signature',
+            category: 'Non-Coffee',
+            sellingPrice: 80,
+            ingredients: [
+              { sku: 'POW-COC-01', recipeQty: 20, unitLabel: 'g', packFactor: 1000 },
+              { sku: 'MILK-WH-01', recipeQty: 150, unitLabel: 'ml', packFactor: 2000 },
+              { sku: 'MILK-CND-01', recipeQty: 25, unitLabel: 'g', packFactor: 2000 },
+              { sku: 'PKG-CUP-16', recipeQty: 1, unitLabel: 'ชุด', packFactor: 50 },
+            ],
+          },
+        ],
+        salesLogs: [
+          { id: 'SLS-201', date: t, menuId: 'M01', cupsSold: 14, channel: 'หน้าร้าน / POS' },
+          { id: 'SLS-202', date: t, menuId: 'M02', cupsSold: 22, channel: 'หน้าร้าน / POS' },
+          { id: 'SLS-203', date: t, menuId: 'M03', cupsSold: 9, channel: 'Grab / LINE MAN' },
+          { id: 'SLS-204', date: t, menuId: 'M04', cupsSold: 7, channel: 'หน้าร้าน / POS' },
+          { id: 'SLS-205', date: t, menuId: 'M05', cupsSold: 6, channel: 'หน้าร้าน / POS' },
+          { id: 'SLS-206', date: t, menuId: 'M06', cupsSold: 8, channel: 'Grab / LINE MAN' },
+        ],
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return createDefaultData();
+        const parsed = JSON.parse(raw);
+        const def = createDefaultData();
+        const mergedConfig = {
+          webAppUrl: String(parsed?.sheetsConfig?.webAppUrl ?? '').trim(),
+          autoSync: parsed?.sheetsConfig?.autoSync !== undefined ? Boolean(parsed.sheetsConfig.autoSync) : true,
+          autoPullOnLoad: parsed?.sheetsConfig?.autoPullOnLoad !== undefined ? Boolean(parsed.sheetsConfig.autoPullOnLoad) : true,
+        };
+        const queue = Array.isArray(parsed?.syncQueue) ? parsed.syncQueue : [];
+        let syncStatus = parsed?.syncStatus || 'not_configured';
+        if (!mergedConfig.webAppUrl) {
+          syncStatus = 'not_configured';
+        } else if (queue.length > 0 || !navigator.onLine) {
+          syncStatus = 'offline_queued';
+        } else if (syncStatus === 'not_configured') {
+          syncStatus = 'synced';
+        }
+        return {
+          ...def,
+          ...parsed,
+          sheetsConfig: mergedConfig,
+          syncQueue: queue,
+          syncStatus,
+          lastSyncAt: parsed?.lastSyncAt || null,
+          inventory: Array.isArray(parsed.inventory) && parsed.inventory.length ? parsed.inventory : def.inventory,
+          movements: Array.isArray(parsed.movements) ? parsed.movements : def.movements,
+          dailyCounts: Array.isArray(parsed.dailyCounts) ? parsed.dailyCounts : def.dailyCounts,
+          recipes: Array.isArray(parsed.recipes) && parsed.recipes.length ? parsed.recipes : def.recipes,
+          salesLogs: Array.isArray(parsed.salesLogs) ? parsed.salesLogs : def.salesLogs,
+        };
+      } catch (e) {
+        console.warn('Failed to parse localStorage, resetting to default:', e);
+        return createDefaultData();
+      }
+    }
+
+    let state = loadState();
+
+    const APPS_SCRIPT_TEMPLATE = `/**
+ * Coffee Stock Pro — Google Apps Script Web App Bridge
+ * อัปเดตและต่อแถวลงใน 6 ชีทเดิมโดยตรง (ไม่สร้างชีทสำรองเพิ่มเติม):
+ *   1_Dashboard_Summary, 2_Master_Inventory, 3_Stock_Movement,
+ *   4_Daily_Count_Checklist, 5_Recipe_Costing, 6_Daily_Sales_Deduction
+ */
+const SHEET_NAMES = {
+  DASHBOARD: '1_Dashboard_Summary',
+  INVENTORY: '2_Master_Inventory',
+  MOVEMENT: '3_Stock_Movement',
+  DAILY_COUNT: '4_Daily_Count_Checklist',
+  RECIPES: '5_Recipe_Costing',
+  SALES: '6_Daily_Sales_Deduction',
+};
+
+function doGet(e) {
+  try {
+    const action = (e && e.parameter && e.parameter.action) || 'getState';
+    if (action === 'ping') {
+      return jsonResponse({ ok: true, message: 'Connected (6 sheets mode)', timestamp: new Date().toISOString() });
+    }
+    if (action === 'getState') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      return jsonResponse({ ok: true, state: buildStateFromSixSheets(ss), updatedAt: new Date().toISOString() });
+    }
+    return jsonResponse({ ok: false, error: 'Unsupported action: ' + action });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: String(err.message || err) });
+  }
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (body.action === 'ping') return jsonResponse({ ok: true, message: 'POST ok' });
+    if (body.action === 'saveState' && body.payload) {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      syncExistingSixSheets(ss, body.payload);
+      return jsonResponse({ ok: true, syncedAt: new Date().toISOString() });
+    }
+    return jsonResponse({ ok: false, error: 'Invalid payload' });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: String(err.message || err) });
+  }
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+    let isSyncingSheets = false;
+    let autoSyncTimer = null;
+
+    function getSyncStatusMeta(status) {
+      switch (status) {
+        case 'syncing':
+          return {
+            label: 'กำลังซิงก์...',
+            pillText: 'กำลังซิงก์...',
+            dotClass: 'bg-amber-500 animate-ping',
+            pillClass: 'bg-amber-100 text-amber-800',
+          };
+        case 'synced':
+          return {
+            label: 'เชื่อมต่อ Sheets แล้ว',
+            pillText: 'เชื่อมต่อ Sheets แล้ว',
+            dotClass: 'bg-emerald-500',
+            pillClass: 'bg-emerald-100 text-emerald-800',
+          };
+        case 'offline_queued':
+          return {
+            label: 'รอซิงก์ (Offline)',
+            pillText: 'รอซิงก์ (Offline)',
+            dotClass: 'bg-amber-500',
+            pillClass: 'bg-amber-100 text-amber-800',
+          };
+        case 'error':
+          return {
+            label: 'ซิงก์ผิดพลาด',
+            pillText: 'ซิงก์ผิดพลาด',
+            dotClass: 'bg-rose-500',
+            pillClass: 'bg-rose-100 text-rose-800',
+          };
+        default:
+          return {
+            label: 'Sheets: ไม่ได้ตั้งค่า',
+            pillText: 'ไม่ได้ตั้งค่า (Local)',
+            dotClass: 'bg-slate-400',
+            pillClass: 'bg-slate-100 text-slate-700',
+          };
+      }
+    }
+
+    function formatThaiDateTime(isoStr) {
+      if (!isoStr) return 'ยังไม่เคยซิงก์สำเร็จ';
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return String(isoStr);
+      return d.toLocaleString('th-TH', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    }
+
+    function updateSheetsStatusUI() {
+      const url = (state.sheetsConfig && state.sheetsConfig.webAppUrl) || '';
+      const queueLen = Array.isArray(state.syncQueue) ? state.syncQueue.length : 0;
+      const effectiveStatus = !url ? 'not_configured' : state.syncStatus || 'synced';
+      const meta = getSyncStatusMeta(effectiveStatus);
+
+      const dotEl = document.getElementById('sheets-status-dot');
+      const labelEl = document.getElementById('sheets-status-label');
+      const badgeEl = document.getElementById('sheets-queue-badge');
+
+      if (dotEl) dotEl.className = `w-2 h-2 rounded-full shrink-0 ${meta.dotClass}`;
+      if (labelEl) labelEl.textContent = !url ? 'Sheets: ไม่ได้ตั้งค่า' : meta.label;
+      if (badgeEl) {
+        if (queueLen > 0) {
+          badgeEl.textContent = String(queueLen);
+          badgeEl.classList.remove('hidden');
+        } else {
+          badgeEl.classList.add('hidden');
+        }
+      }
+
+      const pillEl = document.getElementById('modal-sync-status-pill');
+      const detailStatusEl = document.getElementById('detail-sync-status');
+      const detailQueueEl = document.getElementById('detail-sync-queue');
+      const detailLastSyncEl = document.getElementById('detail-last-sync');
+
+      if (pillEl) {
+        pillEl.textContent = meta.pillText;
+        pillEl.className = `px-2.5 py-0.5 rounded-full text-xs font-semibold ${meta.pillClass}`;
+      }
+      if (detailStatusEl) detailStatusEl.textContent = meta.pillText;
+      if (detailQueueEl) detailQueueEl.textContent = `${queueLen} รายการ`;
+      if (detailLastSyncEl) detailLastSyncEl.textContent = formatThaiDateTime(state.lastSyncAt);
+    }
+
+    function buildSyncPayload() {
+      return {
+        updatedAt: state.updatedAt,
+        inventory: state.inventory,
+        movements: state.movements,
+        dailyCounts: state.dailyCounts,
+        recipes: state.recipes,
+        salesLogs: state.salesLogs,
+      };
+    }
+
+    function enqueueSyncSnapshot() {
+      const url = (state.sheetsConfig && state.sheetsConfig.webAppUrl) || '';
+      if (!url) return;
+      const snapshot = {
+        queuedAt: new Date().toISOString(),
+        payload: buildSyncPayload(),
+      };
+      state.syncQueue = [snapshot];
+      state.syncStatus = 'offline_queued';
+      persistLocalOnly();
+      updateSheetsStatusUI();
+    }
+
+    function scheduleAutoSyncToSheets() {
+      const cfg = state.sheetsConfig || {};
+      if (!cfg.webAppUrl || !cfg.autoSync) return;
+      enqueueSyncSnapshot();
+      clearTimeout(autoSyncTimer);
+      autoSyncTimer = setTimeout(() => {
+        flushSyncQueue(true);
+      }, 450);
+    }
+
+    async function postToSheetsWebApp(url, bodyObj) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(bodyObj),
+          signal: controller.signal,
+          redirect: 'follow',
+        });
+        clearTimeout(timeoutId);
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch (_) {
+          if (res.ok) return { ok: true, raw: text };
+          throw new Error(text || `HTTP ${res.status}`);
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    }
+
+    async function getFromSheetsWebApp(url, action = 'getState') {
+      const sep = url.includes('?') ? '&' : '?';
+      const targetUrl = `${url}${sep}action=${encodeURIComponent(action)}&_t=${Date.now()}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(targetUrl, {
+          method: 'GET',
+          signal: controller.signal,
+          redirect: 'follow',
+        });
+        clearTimeout(timeoutId);
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch (_) {
+          throw new Error(text || `HTTP ${res.status}`);
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    }
+
+    async function flushSyncQueue(silent = false) {
+      const url = (state.sheetsConfig && state.sheetsConfig.webAppUrl) || '';
+      if (!url) {
+        if (!silent) showToast('กรุณากรอก Google Apps Script Web App URL ก่อนครับ', 'warning');
+        return false;
+      }
+      if (isSyncingSheets) return false;
+      if (!Array.isArray(state.syncQueue) || state.syncQueue.length === 0) {
+        state.syncQueue = [{ queuedAt: new Date().toISOString(), payload: buildSyncPayload() }];
+      }
+
+      isSyncingSheets = true;
+      state.syncStatus = 'syncing';
+      updateSheetsStatusUI();
+
+      try {
+        while (state.syncQueue.length > 0) {
+          const item = state.syncQueue[state.syncQueue.length - 1];
+          const result = await postToSheetsWebApp(url, {
+            action: 'saveState',
+            payload: item.payload,
+          });
+          if (!result || result.ok === false) {
+            throw new Error((result && result.error) || 'Apps Script ตอบกลับว่าไม่สำเร็จ');
+          }
+          state.syncQueue = [];
+          state.lastSyncAt = result.syncedAt || new Date().toISOString();
+          state.syncStatus = 'synced';
+          persistLocalOnly();
+        }
+        updateSheetsStatusUI();
+        if (!silent) showToast('ส่งข้อมูลขึ้น 6 ชีทเดิมใน Google Sheets สำเร็จแล้ว', 'success');
+        return true;
+      } catch (err) {
+        state.syncStatus = navigator.onLine ? 'error' : 'offline_queued';
+        persistLocalOnly();
+        updateSheetsStatusUI();
+        if (!silent) {
+          showToast('ซิงก์ขึ้น Sheets ไม่สำเร็จ (เก็บไว้ในคิวแล้ว): ' + (err.message || err), 'warning');
+        }
+        return false;
+      } finally {
+        isSyncingSheets = false;
+        updateSheetsStatusUI();
+      }
+    }
+
+    async function pingSheetsConnection(customUrl) {
+      const url = String(customUrl ?? (state.sheetsConfig && state.sheetsConfig.webAppUrl) ?? '').trim();
+      if (!url) {
+        showToast('กรุณากรอก Web App URL ก่อนทดสอบเชื่อมต่อ', 'warning');
+        return;
+      }
+      const prevStatus = state.syncStatus;
+      state.syncStatus = 'syncing';
+      updateSheetsStatusUI();
+      try {
+        const res = await getFromSheetsWebApp(url, 'ping');
+        if (!res || res.ok === false) {
+          throw new Error((res && res.error) || 'การเชื่อมต่อล้มเหลว');
+        }
+        state.syncStatus = 'synced';
+        state.lastSyncAt = new Date().toISOString();
+        persistLocalOnly();
+        updateSheetsStatusUI();
+        showToast('เชื่อมต่อ Google Sheets Web App สำเร็จ (Ping OK)', 'success');
+      } catch (err) {
+        state.syncStatus = prevStatus === 'not_configured' ? 'error' : 'error';
+        updateSheetsStatusUI();
+        showToast('ทดสอบเชื่อมต่อไม่สำเร็จ: ' + (err.message || err), 'error');
+      }
+    }
+
+    function mergeRemoteStateIntoLocal(remote) {
+      if (!remote || typeof remote !== 'object') return false;
+      const def = createDefaultData();
+      if (Array.isArray(remote.inventory) && remote.inventory.length > 0) {
+        state.inventory = remote.inventory.map((it) => ({
+          sku: String(it.sku || '').trim().toUpperCase(),
+          name: String(it.name || it.sku || '').trim(),
+          category: CATEGORIES.includes(it.category) ? it.category : (it.category || 'เมล็ดกาแฟ'),
+          unit: String(it.unit || 'หน่วย').trim(),
+          costPerUnit: Number(it.costPerUnit) || 0,
+          openingStock: Number(it.openingStock) || 0,
+          parLevel: Number(it.parLevel) || 0,
+          targetStock: Number(it.targetStock) || (Number(it.parLevel) || 0) * 2,
+          supplier: String(it.supplier || '').trim(),
+        })).filter((x) => x.sku);
+      }
+      if (Array.isArray(remote.movements)) {
+        state.movements = remote.movements;
+      }
+      if (Array.isArray(remote.dailyCounts)) {
+        state.dailyCounts = remote.dailyCounts;
+      }
+      if (Array.isArray(remote.recipes) && remote.recipes.length > 0) {
+        const existingMap = new Map((state.recipes || []).map((r) => [r.menuId, r]));
+        state.recipes = remote.recipes.map((r) => {
+          const prev = existingMap.get(r.menuId);
+          return {
+            menuId: String(r.menuId || '').trim().toUpperCase(),
+            menuName: String(r.menuName || r.menuId || '').trim(),
+            category: r.category || (prev && prev.category) || 'Espresso Bar',
+            sellingPrice: Number(r.sellingPrice) || 0,
+            ingredients: Array.isArray(r.ingredients) ? r.ingredients : (prev ? prev.ingredients : []),
+          };
+        }).filter((m) => m.menuId);
+        if (!state.recipes.some((m) => m.menuId === state.selectedMenuId)) {
+          state.selectedMenuId = state.recipes[0]?.menuId || def.selectedMenuId;
+        }
+      }
+      if (Array.isArray(remote.salesLogs)) {
+        state.salesLogs = remote.salesLogs;
+      }
+      state.updatedAt = remote.updatedAt || new Date().toISOString();
+      state.syncQueue = [];
+      state.syncStatus = 'synced';
+      state.lastSyncAt = new Date().toISOString();
+      return true;
+    }
+
+    async function pullStateFromSheets(silent = false) {
+      const url = (state.sheetsConfig && state.sheetsConfig.webAppUrl) || '';
+      if (!url) {
+        if (!silent) showToast('กรุณากรอก Google Apps Script Web App URL ก่อนครับ', 'warning');
+        return false;
+      }
+      if (isSyncingSheets) return false;
+      isSyncingSheets = true;
+      state.syncStatus = 'syncing';
+      updateSheetsStatusUI();
+      try {
+        const res = await getFromSheetsWebApp(url, 'getState');
+        if (!res || res.ok === false) {
+          throw new Error((res && res.error) || 'ไม่สามารถดึงข้อมูลจาก Sheets ได้');
+        }
+        if (!res.state) {
+          state.syncStatus = 'synced';
+          persistLocalOnly();
+          updateSheetsStatusUI();
+          if (!silent) showToast('ยังไม่มีข้อมูลบน Sheets กด "ส่งข้อมูลขึ้น Sheets (Push)" เพื่อเริ่มต้นได้ครับ', 'info');
+          return false;
+        }
+        mergeRemoteStateIntoLocal(res.state);
+        persistLocalOnly();
+        renderAll();
+        if (!silent) showToast('ดึงข้อมูลจาก Google Sheets ลงหน้าเว็บสำเร็จแล้ว', 'success');
+        return true;
+      } catch (err) {
+        state.syncStatus = navigator.onLine ? 'error' : 'offline_queued';
+        persistLocalOnly();
+        updateSheetsStatusUI();
+        if (!silent) showToast('ดึงข้อมูลไม่สำเร็จ: ' + (err.message || err), 'error');
+        return false;
+      } finally {
+        isSyncingSheets = false;
+        updateSheetsStatusUI();
+      }
+    }
+
+    function persistLocalOnly() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const el = document.getElementById('last-updated-label');
+        if (el) {
+          const d = new Date(state.updatedAt);
+          el.textContent = 'อัปเดตล่าสุด: ' + d.toLocaleString('th-TH', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+        }
+      } catch (e) {
+        console.warn('Could not persist to localStorage:', e);
+      }
+    }
+
+    function saveState(options = {}) {
+      const { skipAutoSync = false } = options;
+      state.updatedAt = new Date().toISOString();
+      persistLocalOnly();
+      renderAll();
+      if (!skipAutoSync) {
+        scheduleAutoSyncToSheets();
+      }
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const styles = {
+        success: 'bg-espresso-dark text-white border-espresso',
+        warning: 'bg-amber-800 text-amber-50 border-amber-600',
+        error: 'bg-rose-800 text-rose-50 border-rose-600',
+        info: 'bg-roast text-cream border-espresso/40',
+      };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border shadow-lg text-xs sm:text-sm font-medium transition-all duration-200 ${styles[type] || styles.success}`;
+      toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 220);
+      }, 3200);
+    }
+
+    function computeRecipeMetrics(menu, invMap) {
+      const ingredients = Array.isArray(menu.ingredients) ? menu.ingredients : [];
+      let totalCost = 0;
+      const lines = ingredients.map((ing) => {
+        const inv = invMap.get(ing.sku);
+        const factor = Number(ing.packFactor) > 0 ? Number(ing.packFactor) : 1;
+        const recQty = Number(ing.recipeQty) || 0;
+        const stockUsagePerCup = recQty / factor;
+        const unitCost = inv ? Number(inv.costPerUnit) || 0 : 0;
+        const lineCost = stockUsagePerCup * unitCost;
+        totalCost += lineCost;
+        return {
+          ...ing,
+          invName: inv ? inv.name : 'ไม่พบรหัส SKU ในคลัง',
+          invUnit: inv ? inv.unit : '-',
+          invMissing: !inv,
+          packFactor: factor,
+          recipeQty: recQty,
+          stockUsagePerCup,
+          unitCost,
+          lineCost,
+        };
+      });
+      const sellingPrice = Number(menu.sellingPrice) || 0;
+      const grossProfit = sellingPrice - totalCost;
+      const cogsPct = sellingPrice > 0 ? (totalCost / sellingPrice) * 100 : 0;
+      const marginPct = sellingPrice > 0 ? (grossProfit / sellingPrice) * 100 : 0;
+      return {
+        ...menu,
+        lines,
+        totalCost,
+        sellingPrice,
+        grossProfit,
+        cogsPct,
+        marginPct,
+      };
+    }
+
+    function computeSystemState() {
+      const invMap = new Map();
+      state.inventory.forEach((item) => {
+        invMap.set(item.sku, { ...item });
+      });
+
+      const menuMap = new Map();
+      const recipeMetricsList = state.recipes.map((m) => {
+        const computed = computeRecipeMetrics(m, invMap);
+        menuMap.set(m.menuId, computed);
+        return computed;
+      });
+
+      const manualIn = new Map();
+      const manualOut = new Map();
+      const manualWaste = new Map();
+      const manualAdjust = new Map();
+
+      state.movements.forEach((mov) => {
+        const sku = mov.sku;
+        const qty = Number(mov.qty) || 0;
+        if (mov.type === 'รับเข้า') {
+          manualIn.set(sku, (manualIn.get(sku) || 0) + qty);
+        } else if (mov.type === 'เบิกใช้') {
+          manualOut.set(sku, (manualOut.get(sku) || 0) + qty);
+        } else if (mov.type === 'ของเสีย') {
+          manualWaste.set(sku, (manualWaste.get(sku) || 0) + qty);
+        } else if (mov.type === 'ปรับปรุงยอด') {
+          manualAdjust.set(sku, (manualAdjust.get(sku) || 0) + qty);
+        }
+      });
+
+      const autoSalesDeduct = new Map();
+      let totalCupsSold = 0;
+      let totalSalesRevenue = 0;
+      let totalSalesCogs = 0;
+
+      const enrichedSales = state.salesLogs.map((log) => {
+        const menu = menuMap.get(log.menuId);
+        const cups = Number(log.cupsSold) || 0;
+        const price = menu ? menu.sellingPrice : 0;
+        const unitCost = menu ? menu.totalCost : 0;
+        const revenue = cups * price;
+        const cogs = cups * unitCost;
+        const gp = revenue - cogs;
+
+        totalCupsSold += cups;
+        totalSalesRevenue += revenue;
+        totalSalesCogs += cogs;
+
+        if (menu && cups > 0) {
+          menu.lines.forEach((line) => {
+            const usedStockUnits = line.stockUsagePerCup * cups;
+            autoSalesDeduct.set(line.sku, (autoSalesDeduct.get(line.sku) || 0) + usedStockUnits);
+          });
+        }
+
+        return {
+          ...log,
+          menuName: menu ? menu.menuName : `ไม่พบเมนู (${log.menuId})`,
+          menuMissing: !menu,
+          cupsSold: cups,
+          unitPrice: price,
+          unitCost,
+          revenue,
+          cogs,
+          gp,
+        };
+      });
+
+      let totalInventoryValue = 0;
+      let totalWasteValue = 0;
+      let urgentCount = 0;
+      let lowCount = 0;
+      let healthyCount = 0;
+
+      const enrichedInventory = state.inventory.map((item) => {
+        const stockIn = manualIn.get(item.sku) || 0;
+        const stockManualOut = manualOut.get(item.sku) || 0;
+        const stockAutoSalesOut = autoSalesDeduct.get(item.sku) || 0;
+        const stockWaste = manualWaste.get(item.sku) || 0;
+        const stockAdjust = manualAdjust.get(item.sku) || 0;
+        const totalOut = stockManualOut + stockAutoSalesOut;
+
+        const currentStock = Number(item.openingStock || 0) + stockIn - totalOut - stockWaste + stockAdjust;
+        const stockValue = currentStock * (Number(item.costPerUnit) || 0);
+        const wasteValue = stockWaste * (Number(item.costPerUnit) || 0);
+        totalInventoryValue += stockValue;
+        totalWasteValue += wasteValue;
+
+        const par = Number(item.parLevel) || 0;
+        const target = Number(item.targetStock) > 0 ? Number(item.targetStock) : par * 2;
+
+        let status = 'healthy';
+        let statusLabel = 'ปกติ';
+        if (currentStock <= par * 0.5 || currentStock <= 0) {
+          status = 'urgent';
+          statusLabel = 'ต้องสั่งซื้อด่วน';
+          urgentCount++;
+        } else if (currentStock <= par) {
+          status = 'low';
+          statusLabel = 'ใกล้จุดสั่งซื้อ';
+          lowCount++;
+        } else {
+          healthyCount++;
+        }
+
+        const recommendedOrder = Math.max(0, Number((target - currentStock).toFixed(3)));
+
+        return {
+          ...item,
+          stockIn,
+          stockManualOut,
+          stockAutoSalesOut,
+          totalOut,
+          stockWaste,
+          stockAdjust,
+          currentStock,
+          stockValue,
+          wasteValue,
+          status,
+          statusLabel,
+          recommendedOrder,
+        };
+      });
+
+      const avgMarginPct =
+        totalSalesRevenue > 0 ? ((totalSalesRevenue - totalSalesCogs) / totalSalesRevenue) * 100 : 0;
+
+      return {
+        inventory: enrichedInventory,
+        invMap: new Map(enrichedInventory.map((x) => [x.sku, x])),
+        recipes: recipeMetricsList,
+        menuMap: new Map(recipeMetricsList.map((m) => [m.menuId, m])),
+        salesLogs: enrichedSales,
+        autoSalesDeduct,
+        kpis: {
+          totalSkus: enrichedInventory.length,
+          totalInventoryValue,
+          totalWasteValue,
+          urgentCount,
+          lowCount,
+          healthyCount,
+          reorderNeededCount: urgentCount + lowCount,
+          totalCupsSold,
+          totalSalesRevenue,
+          totalSalesCogs,
+          totalSalesGp: totalSalesRevenue - totalSalesCogs,
+          avgMarginPct,
+        },
+      };
+    }
+
+    const NAV_ITEMS = [
+      { id: 'dashboard', label: '1. ภาพรวมสต็อก', desc: 'KPI, จุดสั่งซื้อด่วน & กำไร' },
+      { id: 'inventory', label: '2. คลังวัตถุดิบหลัก', desc: 'SKU, Par Level & สต็อกคงเหลือ' },
+      { id: 'movement', label: '3. รับเข้า-เบิกออก-ของเสีย', desc: 'บันทึกความเคลื่อนไหวรายวัน' },
+      { id: 'daily-count', label: '4. เช็กสต็อกประจำวัน', desc: 'นับจริงปิดกะ & หาผลต่าง' },
+      { id: 'recipes', label: '5. ต้นทุนต่อแก้ว (BOM)', desc: 'สูตรชง, % COGS & กำไร/แก้ว' },
+      { id: 'sales', label: '6. ยอดขาย & ตัดสต็อก', desc: 'บันทึกยอดขายตัดสต็อกอัตโนมัติ' },
+    ];
+
+    function renderNav() {
+      const nav = document.getElementById('nav-tabs');
+      const computed = computeSystemState();
+      nav.innerHTML = NAV_ITEMS.map((item) => {
+        const active = state.activeTab === item.id;
+        let badgeHtml = '';
+        if (item.id === 'inventory' && computed.kpis.reorderNeededCount > 0) {
+          badgeHtml = `<span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 tabular-nums">${computed.kpis.reorderNeededCount}</span>`;
+        }
+        return `
+          <button
+            type="button"
+            data-tab="${item.id}"
+            class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center justify-between gap-2 ${
+              active
+                ? 'bg-espresso text-white shadow-sm'
+                : 'text-roast hover:bg-peach/80'
+            }"
+          >
+            <div class="min-w-0">
+              <div class="text-xs sm:text-sm font-semibold truncate">${item.label}</div>
+              <div class="text-[11px] truncate ${active ? 'text-white/80' : 'text-roast/60'}">${item.desc}</div>
+            </div>
+            ${badgeHtml}
+          </button>
+        `;
+      }).join('');
+
+      nav.querySelectorAll('[data-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.activeTab = btn.getAttribute('data-tab');
+          saveState({ skipAutoSync: true });
+          closeMobileSidebar();
+        });
+      });
+    }
+
+    function closeMobileSidebar() {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('mobile-backdrop').classList.add('hidden');
+    }
+
+    function openMobileSidebar() {
+      document.getElementById('sidebar').classList.remove('-translate-x-full');
+      document.getElementById('mobile-backdrop').classList.remove('hidden');
+    }
+
+    function renderDashboard(sys) {
+      const { kpis, inventory, salesLogs } = sys;
+      const reorderItems = inventory
+        .filter((i) => i.status === 'urgent' || i.status === 'low')
+        .sort((a, b) => (a.status === 'urgent' ? -1 : 1) - (b.status === 'urgent' ? -1 : 1));
+
+      const categorySummary = CATEGORIES.map((cat) => {
+        const items = inventory.filter((i) => i.category === cat);
+        const val = items.reduce((sum, i) => sum + i.stockValue, 0);
+        const alerts = items.filter((i) => i.status !== 'healthy').length;
+        return { cat, count: items.length, val, alerts };
+      });
+
+      const recentSales = [...salesLogs].reverse().slice(0, 5);
+
+      document.getElementById('view-dashboard').innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-peach shadow-card">
+            <div class="flex items-center justify-between text-xs font-semibold text-roast/70">
+              <span>มูลค่าสต็อกคงเหลือรวม</span>
+              <span class="px-2 py-0.5 rounded-full bg-peach text-espresso">${kpis.totalSkus} SKUs</span>
+            </div>
+            <div class="text-2xl font-bold text-roast mt-2 tabular-nums">${formatTHB(kpis.totalInventoryValue)}</div>
+            <p class="text-xs text-roast/60 mt-1.5">ของเสียสะสม: <span class="font-semibold text-rose-700 tabular-nums">${formatTHB(kpis.totalWasteValue)}</span></p>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-peach shadow-card">
+            <div class="flex items-center justify-between text-xs font-semibold text-roast/70">
+              <span>รายการต้องสั่งซื้อ (Par Alert)</span>
+              <span class="px-2 py-0.5 rounded-full ${kpis.urgentCount > 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                ด่วน ${kpis.urgentCount}
+              </span>
+            </div>
+            <div class="text-2xl font-bold ${kpis.reorderNeededCount > 0 ? 'text-rose-700' : 'text-emerald-700'} mt-2 tabular-nums">
+              ${kpis.reorderNeededCount} <span class="text-sm font-semibold">รายการ</span>
+            </div>
+            <p class="text-xs text-roast/60 mt-1.5">ใกล้จุดสั่งซื้อ: <span class="font-semibold text-amber-700 tabular-nums">${kpis.lowCount}</span> · ปกติ: <span class="font-semibold text-emerald-700 tabular-nums">${kpis.healthyCount}</span></p>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-peach shadow-card">
+            <div class="flex items-center justify-between text-xs font-semibold text-roast/70">
+              <span>ยอดขายเครื่องดื่มบันทึกไว้</span>
+              <span class="px-2 py-0.5 rounded-full bg-peach text-espresso tabular-nums">${formatQty(kpis.totalCupsSold)} แก้ว</span>
+            </div>
+            <div class="text-2xl font-bold text-roast mt-2 tabular-nums">${formatTHB(kpis.totalSalesRevenue)}</div>
+            <p class="text-xs text-roast/60 mt-1.5">ต้นทุนวัตถุดิบตัดแล้ว: <span class="font-semibold text-roast tabular-nums">${formatTHB(kpis.totalSalesCogs)}</span></p>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-peach shadow-card">
+            <div class="flex items-center justify-between text-xs font-semibold text-roast/70">
+              <span>กำไรขั้นต้นเฉลี่ย (Gross Margin)</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Target &ge; 65%</span>
+            </div>
+            <div class="text-2xl font-bold text-emerald-700 mt-2 tabular-nums">${kpis.avgMarginPct.toFixed(1)}%</div>
+            <p class="text-xs text-roast/60 mt-1.5">กำไรขั้นต้นรวม: <span class="font-semibold text-emerald-700 tabular-nums">${formatTHB(kpis.totalSalesGp)}</span></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-peach shadow-card overflow-hidden">
+          <div class="px-5 py-4 border-b border-peach flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h3 class="text-base font-bold text-roast">รายการต้องสั่งซื้อเพิ่ม (Reorder Action List)</h3>
+              <p class="text-xs text-roast/65">กรองเฉพาะวัตถุดิบที่ต่ำกว่าหรือเท่ากับ Par Level พร้อมปุ่มรับเข้าด่วน</p>
+            </div>
+            <button
+              type="button"
+              onclick="state.activeTab='inventory'; saveState({ skipAutoSync: true });"
+              class="text-xs font-semibold text-espresso hover:text-espresso-dark underline self-start sm:self-auto"
+            >
+              ดูคลังวัตถุดิบทั้งหมด &rarr;
+            </button>
+          </div>
+
+          ${
+            reorderItems.length === 0
+              ? `<div class="p-8 text-center text-sm text-roast/65">ยอดเยี่ยม! วัตถุดิบทุกรายการอยู่ในระดับสต็อกปกติ (สูงกว่า Par Level)</div>`
+              : `<div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                        <th class="py-3 px-4 font-semibold">วัตถุดิบ / SKU</th>
+                        <th class="py-3 px-4 font-semibold">ซัพพลายเออร์</th>
+                        <th class="py-3 px-4 font-semibold text-right">คงเหลือ</th>
+                        <th class="py-3 px-4 font-semibold text-right">Par Level</th>
+                        <th class="py-3 px-4 font-semibold text-right">ควรสั่งเพิ่ม</th>
+                        <th class="py-3 px-4 font-semibold text-center">สถานะ</th>
+                        <th class="py-3 px-4 font-semibold text-right">ดำเนินการ</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                      ${reorderItems
+                        .map(
+                          (item) => `
+                        <tr class="hover:bg-cream/60 transition">
+                          <td class="py-3 px-4">
+                            <div class="font-semibold text-roast">${escapeHTML(item.name)}</div>
+                            <div class="text-xs text-roast/60 font-mono">${escapeHTML(item.sku)} · ${escapeHTML(item.unit)}</div>
+                          </td>
+                          <td class="py-3 px-4 text-roast/80">${escapeHTML(item.supplier || '-')}</td>
+                          <td class="py-3 px-4 text-right font-bold tabular-nums ${item.status === 'urgent' ? 'text-rose-700' : 'text-amber-700'}">
+                            ${formatQty(item.currentStock)}
+                          </td>
+                          <td class="py-3 px-4 text-right tabular-nums text-roast/75">${formatQty(item.parLevel)}</td>
+                          <td class="py-3 px-4 text-right font-bold text-espresso tabular-nums">+${formatQty(item.recommendedOrder)}</td>
+                          <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              item.status === 'urgent'
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }">
+                              ${item.statusLabel}
+                            </span>
+                          </td>
+                          <td class="py-3 px-4 text-right">
+                            <button
+                              type="button"
+                              data-quick-reorder="${escapeHTML(item.sku)}"
+                              class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white transition shadow-2xs"
+                            >
+                              รับเข้าด่วน
+                            </button>
+                          </td>
+                        </tr>
+                      `
+                        )
+                        .join('')}
+                    </tbody>
+                  </table>
+                </div>`
+          }
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-4">
+            <h3 class="text-base font-bold text-roast">มูลค่าสต็อกแยกตามหมวดหมู่</h3>
+            <div class="space-y-3">
+              ${categorySummary
+                .map((c) => {
+                  const pct = kpis.totalInventoryValue > 0 ? Math.min(100, (c.val / kpis.totalInventoryValue) * 100) : 0;
+                  return `
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between text-xs sm:text-sm">
+                        <span class="font-semibold text-roast">
+                          ${escapeHTML(c.cat)}
+                          <span class="text-xs font-normal text-roast/60">(${c.count} รายการ)</span>
+                          ${c.alerts > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">แจ้งเตือน ${c.alerts}</span>` : ''}
+                        </span>
+                        <span class="font-bold text-roast tabular-nums">${formatTHB(c.val)}</span>
+                      </div>
+                      <div class="w-full h-2 rounded-full bg-peach overflow-hidden">
+                        <div class="h-full rounded-full bg-espresso transition-all duration-300" style="width: ${pct.toFixed(1)}%"></div>
+                      </div>
+                    </div>
+                  `;
+                })
+                .join('')}
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-roast">ยอดขายล่าสุดที่ตัดสต็อกแล้ว</h3>
+              <button
+                type="button"
+                onclick="state.activeTab='sales'; saveState({ skipAutoSync: true });"
+                class="text-xs font-semibold text-espresso hover:underline"
+              >
+                บันทึกยอดขายเพิ่ม &rarr;
+              </button>
+            </div>
+            <div class="divide-y divide-peach/70">
+              ${recentSales
+                .map(
+                  (s) => `
+                <div class="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                  <div class="min-w-0">
+                    <div class="font-semibold text-roast truncate">${escapeHTML(s.menuName)}</div>
+                    <div class="text-xs text-roast/60 tabular-nums">${escapeHTML(s.date)} · ${escapeHTML(s.channel)} · ${formatQty(s.cupsSold)} แก้ว</div>
+                  </div>
+                  <div class="text-right shrink-0 tabular-nums">
+                    <div class="font-bold text-roast">${formatTHB(s.revenue)}</div>
+                    <div class="text-[11px] text-emerald-700">GP ${formatTHB(s.gp)}</div>
+                  </div>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.querySelectorAll('[data-quick-reorder]').forEach((btn) => {
+        btn.addEventListener('click', () => openQuickReorderModal(btn.getAttribute('data-quick-reorder'), sys));
+      });
+    }
+
+    let invSearch = '';
+    let invCategoryFilter = 'ALL';
+    let invStatusFilter = 'ALL';
+
+    function renderInventory(sys) {
+      document.getElementById('view-header-actions').innerHTML = `
+        <button
+          type="button"
+          id="btn-open-add-sku"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition"
+        >
+          <span>+ เพิ่มวัตถุดิบ (SKU)</span>
+        </button>
+      `;
+      document.getElementById('btn-open-add-sku').addEventListener('click', () => openSkuModal('add'));
+
+      const filtered = sys.inventory.filter((item) => {
+        const q = invSearch.trim().toLowerCase();
+        const matchSearch =
+          !q ||
+          item.name.toLowerCase().includes(q) ||
+          item.sku.toLowerCase().includes(q) ||
+          (item.supplier || '').toLowerCase().includes(q);
+        const matchCat = invCategoryFilter === 'ALL' || item.category === invCategoryFilter;
+        const matchStatus = invStatusFilter === 'ALL' || item.status === invStatusFilter;
+        return matchSearch && matchCat && matchStatus;
+      });
+
+      document.getElementById('view-inventory').innerHTML = `
+        <div class="bg-white rounded-2xl border border-peach shadow-card p-4 space-y-3">
+          <div class="text-xs text-roast/75 bg-cream px-3.5 py-2.5 rounded-xl border border-peach">
+            <strong>สูตรคำนวณยอดคงเหลือจริง:</strong> ยกมา + รับเข้า &minus; (เบิกใช้ + ตัดขายอัตโนมัติ) &minus; ของเสีย + ปรับปรุงยอด
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input
+              id="inv-search-input"
+              type="text"
+              value="${escapeHTML(invSearch)}"
+              placeholder="ค้นหาชื่อวัตถุดิบ, รหัส SKU หรือซัพพลายเออร์..."
+              class="px-3.5 py-2 rounded-xl border border-espresso/20 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            />
+            <select
+              id="inv-cat-select"
+              class="px-3.5 py-2 rounded-xl border border-espresso/20 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            >
+              <option value="ALL">ทุกหมวดหมู่ (${sys.inventory.length})</option>
+              ${CATEGORIES.map((c) => `<option value="${escapeHTML(c)}" ${invCategoryFilter === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
+            </select>
+            <select
+              id="inv-status-select"
+              class="px-3.5 py-2 rounded-xl border border-espresso/20 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+            >
+              <option value="ALL" ${invStatusFilter === 'ALL' ? 'selected' : ''}>ทุกสถานะสต็อก</option>
+              <option value="urgent" ${invStatusFilter === 'urgent' ? 'selected' : ''}>ต้องสั่งซื้อด่วน</option>
+              <option value="low" ${invStatusFilter === 'low' ? 'selected' : ''}>ใกล้จุดสั่งซื้อ</option>
+              <option value="healthy" ${invStatusFilter === 'healthy' ? 'selected' : ''}>สต็อกปกติ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-peach shadow-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                  <th class="py-3 px-4 font-semibold">SKU / วัตถุดิบ</th>
+                  <th class="py-3 px-4 font-semibold">หมวดหมู่</th>
+                  <th class="py-3 px-4 font-semibold text-right">ต้นทุน/หน่วย</th>
+                  <th class="py-3 px-4 font-semibold text-right">ยกมา</th>
+                  <th class="py-3 px-4 font-semibold text-right">+รับเข้า</th>
+                  <th class="py-3 px-4 font-semibold text-right">-เบิก/ตัดขาย</th>
+                  <th class="py-3 px-4 font-semibold text-right">-ของเสีย</th>
+                  <th class="py-3 px-4 font-semibold text-right">คงเหลือ</th>
+                  <th class="py-3 px-4 font-semibold text-right">มูลค่าคงคลัง</th>
+                  <th class="py-3 px-4 font-semibold text-center">สถานะ</th>
+                  <th class="py-3 px-4 font-semibold text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                ${
+                  filtered.length === 0
+                    ? `<tr><td colspan="11" class="py-8 text-center text-roast/60">ไม่พบรายการวัตถุดิบที่ตรงกับเงื่อนไข</td></tr>`
+                    : filtered
+                        .map(
+                          (item) => `
+                      <tr class="hover:bg-cream/60 transition">
+                        <td class="py-3 px-4">
+                          <div class="font-semibold text-roast">${escapeHTML(item.name)}</div>
+                          <div class="text-xs text-roast/60 font-mono">${escapeHTML(item.sku)} · ${escapeHTML(item.unit)}</div>
+                        </td>
+                        <td class="py-3 px-4 text-xs text-roast/80">${escapeHTML(item.category)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums">${formatTHB(item.costPerUnit)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums text-roast/75">${formatQty(item.openingStock)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums text-emerald-700 font-medium">+${formatQty(item.stockIn)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums text-roast" title="เบิกหน้าร้าน ${formatQty(item.stockManualOut)} + ตัดขายอัตโนมัติ ${formatQty(item.stockAutoSalesOut)}">
+                          -${formatQty(item.totalOut)}
+                          <div class="text-[10px] text-roast/55">ขาย ${formatQty(item.stockAutoSalesOut)}</div>
+                        </td>
+                        <td class="py-3 px-4 text-right tabular-nums text-rose-700">-${formatQty(item.stockWaste)}</td>
+                        <td class="py-3 px-4 text-right font-bold tabular-nums ${
+                          item.status === 'urgent'
+                            ? 'text-rose-700'
+                            : item.status === 'low'
+                            ? 'text-amber-700'
+                            : 'text-roast'
+                        }">
+                          ${formatQty(item.currentStock)}
+                          <div class="text-[10px] font-normal text-roast/55">Par ${formatQty(item.parLevel)}</div>
+                        </td>
+                        <td class="py-3 px-4 text-right font-semibold tabular-nums">${formatTHB(item.stockValue)}</td>
+                        <td class="py-3 px-4 text-center">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            item.status === 'urgent'
+                              ? 'bg-rose-100 text-rose-800'
+                              : item.status === 'low'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }">
+                            ${item.statusLabel}
+                          </span>
+                        </td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                          <button
+                            type="button"
+                            data-quick-reorder="${escapeHTML(item.sku)}"
+                            class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-peach hover:bg-latte text-roast transition"
+                          >
+                            +รับเข้า
+                          </button>
+                          <button
+                            type="button"
+                            data-edit-sku="${escapeHTML(item.sku)}"
+                            class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-cream hover:bg-peach text-roast border border-espresso/15 transition"
+                          >
+                            แก้ไข
+                          </button>
+                        </td>
+                      </tr>
+                    `
+                        )
+                        .join('')
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('inv-search-input').addEventListener('input', (e) => {
+        invSearch = e.target.value;
+        renderInventory(sys);
+        document.getElementById('inv-search-input').focus();
+      });
+      document.getElementById('inv-cat-select').addEventListener('change', (e) => {
+        invCategoryFilter = e.target.value;
+        renderInventory(sys);
+      });
+      document.getElementById('inv-status-select').addEventListener('change', (e) => {
+        invStatusFilter = e.target.value;
+        renderInventory(sys);
+      });
+      document.querySelectorAll('[data-quick-reorder]').forEach((btn) => {
+        btn.addEventListener('click', () => openQuickReorderModal(btn.getAttribute('data-quick-reorder'), sys));
+      });
+      document.querySelectorAll('[data-edit-sku]').forEach((btn) => {
+        btn.addEventListener('click', () => openSkuModal('edit', btn.getAttribute('data-edit-sku')));
+      });
+    }
+
+    function renderMovement(sys) {
+      const firstSku = sys.inventory[0]?.sku || '';
+      const firstInv = sys.invMap.get(firstSku);
+
+      document.getElementById('view-movement').innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <form id="movement-form" class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-4 h-fit">
+            <h3 class="text-base font-bold text-roast">บันทึกรายการรับเข้า / เบิกใช้ / ของเสีย</h3>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-roast mb-1">วันที่ *</label>
+                <input
+                  id="mov-date"
+                  type="date"
+                  required
+                  value="${todayISO()}"
+                  class="w-full px-3 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-xs sm:text-sm"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-roast mb-1">ประเภทรายการ *</label>
+                <select
+                  id="mov-type"
+                  class="w-full px-3 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-xs sm:text-sm font-semibold"
+                >
+                  <option value="รับเข้า">รับเข้า (+เพิ่มสต็อก)</option>
+                  <option value="เบิกใช้">เบิกใช้ (-ลดสต็อก)</option>
+                  <option value="ของเสีย">ของเสีย (-ลดสต็อก)</option>
+                  <option value="ปรับปรุงยอด">ปรับปรุงยอด (+/-)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-roast mb-1">เลือกวัตถุดิบ (SKU) *</label>
+              <select
+                id="mov-sku"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-xs sm:text-sm"
+              >
+                ${sys.inventory
+                  .map(
+                    (it) =>
+                      `<option value="${escapeHTML(it.sku)}">[${escapeHTML(it.sku)}] ${escapeHTML(it.name)} (${escapeHTML(it.unit)})</option>`
+                  )
+                  .join('')}
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-roast mb-1">จำนวน (<span id="mov-unit-hint">${escapeHTML(firstInv?.unit || 'หน่วย')}</span>) *</label>
+                <input
+                  id="mov-qty"
+                  type="number"
+                  step="any"
+                  required
+                  placeholder="0"
+                  class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm font-bold tabular-nums"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-roast mb-1">ต้นทุนต่อหน่วย (฿)</label>
+                <input
+                  id="mov-cost"
+                  type="number"
+                  step="any"
+                  min="0"
+                  value="${firstInv?.costPerUnit ?? 0}"
+                  class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm tabular-nums"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-roast mb-1">ผู้บันทึก *</label>
+              <input
+                id="mov-staff"
+                type="text"
+                required
+                placeholder="เช่น นนท์ (Barista)"
+                class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-roast mb-1">หมายเหตุ / สาเหตุ</label>
+              <input
+                id="mov-note"
+                type="text"
+                placeholder="เช่น รับของรอบเช้า หรือ นมหมดอายุ"
+                class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="w-full py-2.5 rounded-xl text-sm font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition active:scale-[0.99]"
+            >
+              บันทึกรายการสต็อก
+            </button>
+          </form>
+
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-peach shadow-card overflow-hidden">
+            <div class="px-5 py-4 border-b border-peach flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-bold text-roast">ประวัติความเคลื่อนไหวสต็อก (${state.movements.length} รายการ)</h3>
+                <p class="text-xs text-roast/65">เรียงจากรายการล่าสุดไปเก่าสุด</p>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                    <th class="py-3 px-4 font-semibold">วันที่</th>
+                    <th class="py-3 px-4 font-semibold">ประเภท</th>
+                    <th class="py-3 px-4 font-semibold">วัตถุดิบ</th>
+                    <th class="py-3 px-4 font-semibold text-right">จำนวน</th>
+                    <th class="py-3 px-4 font-semibold text-right">มูลค่า</th>
+                    <th class="py-3 px-4 font-semibold">ผู้บันทึก / หมายเหตุ</th>
+                    <th class="py-3 px-4 font-semibold text-right">ลบ</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                  ${
+                    state.movements.length === 0
+                      ? `<tr><td colspan="7" class="py-8 text-center text-roast/60">ยังไม่มีประวัติความเคลื่อนไหว</td></tr>`
+                      : [...state.movements]
+                          .reverse()
+                          .map((m) => {
+                            const inv = sys.invMap.get(m.sku);
+                            const val = (Number(m.qty) || 0) * (Number(m.unitCost ?? inv?.costPerUnit) || 0);
+                            const badgeColor =
+                              m.type === 'รับเข้า'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : m.type === 'ของเสีย'
+                                ? 'bg-rose-100 text-rose-800'
+                                : m.type === 'เบิกใช้'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-slate-100 text-slate-700';
+                            return `
+                              <tr class="hover:bg-cream/60 transition">
+                                <td class="py-3 px-4 whitespace-nowrap tabular-nums text-xs">${escapeHTML(m.date)}</td>
+                                <td class="py-3 px-4 whitespace-nowrap">
+                                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${badgeColor}">${escapeHTML(m.type)}</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                  <div class="font-semibold text-roast">${escapeHTML(inv ? inv.name : m.sku)}</div>
+                                  <div class="text-[11px] font-mono text-roast/60">${escapeHTML(m.sku)}</div>
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold tabular-nums">${formatQty(m.qty)} <span class="text-xs font-normal text-roast/60">${escapeHTML(inv?.unit || '')}</span></td>
+                                <td class="py-3 px-4 text-right tabular-nums">${formatTHB(val)}</td>
+                                <td class="py-3 px-4 text-xs">
+                                  <div class="font-medium text-roast">${escapeHTML(m.staff || '-')}</div>
+                                  <div class="text-roast/60">${escapeHTML(m.note || '-')}</div>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                  <button
+                                    type="button"
+                                    data-del-mov="${escapeHTML(m.id)}"
+                                    class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded hover:bg-rose-50"
+                                  >
+                                    ลบ
+                                  </button>
+                                </td>
+                              </tr>
+                            `;
+                          })
+                          .join('')
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const skuSelect = document.getElementById('mov-sku');
+      skuSelect.addEventListener('change', () => {
+        const picked = sys.invMap.get(skuSelect.value);
+        if (picked) {
+          document.getElementById('mov-unit-hint').textContent = picked.unit;
+          document.getElementById('mov-cost').value = picked.costPerUnit;
+        }
+      });
+
+      document.getElementById('movement-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sku = document.getElementById('mov-sku').value;
+        const type = document.getElementById('mov-type').value;
+        const qty = Number(document.getElementById('mov-qty').value);
+        const unitCost = Number(document.getElementById('mov-cost').value) || 0;
+        const staff = document.getElementById('mov-staff').value.trim();
+        const note = document.getElementById('mov-note').value.trim();
+        const date = document.getElementById('mov-date').value;
+
+        if (!sku || isNaN(qty) || qty === 0) {
+          showToast('กรุณาระบุจำนวนให้ถูกต้องครับ', 'warning');
+          return;
+        }
+
+        state.movements.push({
+          id: 'MOV-' + Date.now().toString().slice(-6),
+          date,
+          type,
+          sku,
+          qty,
+          unitCost,
+          staff,
+          note,
+        });
+        saveState();
+        showToast(`บันทึก "${type}" (${sku}) เรียบร้อยแล้ว`, 'success');
+      });
+
+      document.querySelectorAll('[data-del-mov]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-del-mov');
+          state.movements = state.movements.filter((m) => m.id !== id);
+          saveState();
+          showToast('ลบรายการความเคลื่อนไหวแล้ว', 'info');
+        });
+      });
+    }
+
+    function renderDailyCount(sys) {
+      document.getElementById('view-daily-count').innerHTML = `
+        <div class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="text-base font-bold text-roast">เช็กสต็อกจริงหน้าบาร์ตอนปิดร้าน (Physical Count)</h3>
+              <p class="text-xs text-roast/65">กรอกยอดที่นับได้จริงเพื่อเปรียบเทียบกับยอดในระบบและคำนวณผลต่าง (Variance)</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                id="count-date"
+                type="date"
+                value="${todayISO()}"
+                class="px-3 py-2 rounded-xl border border-espresso/25 bg-cream/60 text-xs sm:text-sm"
+              />
+              <input
+                id="count-staff"
+                type="text"
+                value="นนท์ (Barista)"
+                placeholder="ชื่อผู้ตรวจนับ"
+                class="px-3 py-2 rounded-xl border border-espresso/25 bg-cream/60 text-xs sm:text-sm"
+              />
+              <button
+                type="button"
+                id="btn-save-daily-count"
+                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition"
+              >
+                บันทึกผลตรวจนับวันนี้
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                  <th class="py-3 px-4 font-semibold">วัตถุดิบ / SKU</th>
+                  <th class="py-3 px-4 font-semibold text-right">ยอดในระบบ</th>
+                  <th class="py-3 px-4 font-semibold text-right">นับจริงหน้าบาร์</th>
+                  <th class="py-3 px-4 font-semibold text-right">ผลต่าง (หน่วย)</th>
+                  <th class="py-3 px-4 font-semibold text-right">มูลค่าผลต่าง (฿)</th>
+                </tr>
+              </thead>
+              <tbody id="daily-count-tbody" class="divide-y divide-peach/70 text-xs sm:text-sm">
+                ${sys.inventory
+                  .map(
+                    (item) => `
+                  <tr data-count-row="${escapeHTML(item.sku)}" class="hover:bg-cream/60">
+                    <td class="py-3 px-4">
+                      <div class="font-semibold text-roast">${escapeHTML(item.name)}</div>
+                      <div class="text-xs text-roast/60 font-mono">${escapeHTML(item.sku)} · ${escapeHTML(item.unit)}</div>
+                    </td>
+                    <td class="py-3 px-4 text-right font-semibold tabular-nums" data-sys-val="${item.currentStock}">${formatQty(item.currentStock)}</td>
+                    <td class="py-3 px-4 text-right">
+                      <input
+                        type="number"
+                        step="any"
+                        data-phys-input="${escapeHTML(item.sku)}"
+                        value="${Number(item.currentStock.toFixed(3))}"
+                        class="w-28 text-right px-2.5 py-1.5 rounded-lg border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso font-semibold tabular-nums"
+                      />
+                    </td>
+                    <td class="py-3 px-4 text-right font-bold tabular-nums" data-var-qty="${escapeHTML(item.sku)}">0</td>
+                    <td class="py-3 px-4 text-right font-bold tabular-nums" data-var-val="${escapeHTML(item.sku)}">${formatTHB(0)}</td>
+                  </tr>
+                `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-3">
+          <h3 class="text-base font-bold text-roast">ประวัติการตรวจนับสต็อกย้อนหลัง</h3>
+          ${
+            state.dailyCounts.length === 0
+              ? `<p class="text-xs text-roast/60">ยังไม่มีประวัติการตรวจนับ</p>`
+              : `<div class="space-y-3">
+                  ${[...state.dailyCounts]
+                    .reverse()
+                    .map((log) => {
+                      const totalVarVal = (log.items || []).reduce((s, i) => s + (Number(i.varianceValue) || 0), 0);
+                      return `
+                        <div class="p-4 rounded-xl bg-cream/70 border border-peach flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
+                          <div>
+                            <div class="font-bold text-roast">วันที่ ${escapeHTML(log.date)} · ผู้ตรวจนับ: ${escapeHTML(log.staff)}</div>
+                            <div class="text-xs text-roast/65">ตรวจนับ ${(log.items || []).length} รายการ</div>
+                          </div>
+                          <div class="font-bold tabular-nums ${totalVarVal < 0 ? 'text-rose-700' : totalVarVal > 0 ? 'text-emerald-700' : 'text-roast'}">
+                            ผลต่างมูลค่ารวม: ${totalVarVal > 0 ? '+' : ''}${formatTHB(totalVarVal)}
+                          </div>
+                        </div>
+                      `;
+                    })
+                    .join('')}
+                </div>`
+          }
+        </div>
+      `;
+
+      function recalcCountRows() {
+        sys.inventory.forEach((item) => {
+          const input = document.querySelector(`[data-phys-input="${item.sku}"]`);
+          const varQtyEl = document.querySelector(`[data-var-qty="${item.sku}"]`);
+          const varValEl = document.querySelector(`[data-var-val="${item.sku}"]`);
+          if (!input || !varQtyEl || !varValEl) return;
+          const phys = Number(input.value);
+          const diff = (isNaN(phys) ? item.currentStock : phys) - item.currentStock;
+          const diffVal = diff * (Number(item.costPerUnit) || 0);
+          varQtyEl.textContent = (diff > 0 ? '+' : '') + formatQty(diff);
+          varValEl.textContent = (diffVal > 0 ? '+' : '') + formatTHB(diffVal);
+          const colorClass = diff < -0.0001 ? 'text-rose-700' : diff > 0.0001 ? 'text-emerald-700' : 'text-roast/65';
+          varQtyEl.className = `py-3 px-4 text-right font-bold tabular-nums ${colorClass}`;
+          varValEl.className = `py-3 px-4 text-right font-bold tabular-nums ${colorClass}`;
+        });
+      }
+
+      document.querySelectorAll('[data-phys-input]').forEach((inp) => {
+        inp.addEventListener('input', recalcCountRows);
+      });
+      recalcCountRows();
+
+      document.getElementById('btn-save-daily-count').addEventListener('click', () => {
+        const date = document.getElementById('count-date').value || todayISO();
+        const staff = document.getElementById('count-staff').value.trim() || 'Barista';
+        const items = sys.inventory.map((item) => {
+          const inp = document.querySelector(`[data-phys-input="${item.sku}"]`);
+          const phys = inp ? Number(inp.value) : item.currentStock;
+          const safePhys = isNaN(phys) ? item.currentStock : phys;
+          const variance = Number((safePhys - item.currentStock).toFixed(4));
+          const varianceValue = Number((variance * (Number(item.costPerUnit) || 0)).toFixed(2));
+          return {
+            sku: item.sku,
+            systemStock: Number(item.currentStock.toFixed(4)),
+            physicalStock: safePhys,
+            variance,
+            varianceValue,
+          };
+        });
+
+        state.dailyCounts.push({
+          id: 'CNT-' + Date.now().toString().slice(-6),
+          date,
+          staff,
+          items,
+        });
+        saveState();
+        showToast(`บันทึกผลตรวจนับสต็อกวันที่ ${date} เรียบร้อยแล้ว`, 'success');
+      });
+    }
+
+    function renderRecipes(sys) {
+      document.getElementById('view-header-actions').innerHTML = `
+        <button
+          type="button"
+          id="btn-open-add-menu"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition"
+        >
+          <span>+ สร้างเมนูใหม่</span>
+        </button>
+      `;
+      document.getElementById('btn-open-add-menu').addEventListener('click', () => {
+        document.getElementById('menu-form').reset();
+        document.getElementById('new-menu-price').value = '85';
+        openModal('menu-modal');
+      });
+
+      const activeMenu =
+        sys.menuMap.get(state.selectedMenuId) || sys.recipes[0] || null;
+      if (activeMenu && state.selectedMenuId !== activeMenu.menuId) {
+        state.selectedMenuId = activeMenu.menuId;
+      }
+
+      document.getElementById('view-recipes').innerHTML = `
+        <div class="bg-white rounded-2xl border border-peach shadow-card overflow-hidden">
+          <div class="px-5 py-4 border-b border-peach">
+            <h3 class="text-base font-bold text-roast">ตารางสรุปต้นทุนต่อแก้วและกำไรขั้นต้นทุกเมนู</h3>
+            <p class="text-xs text-roast/65">คลิกเลือกเมนูเพื่อแก้ไขสูตรชง (Bill of Materials) ด้านล่าง</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                  <th class="py-3 px-4 font-semibold">รหัส / เมนู</th>
+                  <th class="py-3 px-4 font-semibold text-right">ราคาขาย</th>
+                  <th class="py-3 px-4 font-semibold text-right">ต้นทุน/แก้ว</th>
+                  <th class="py-3 px-4 font-semibold text-right">กำไร/แก้ว</th>
+                  <th class="py-3 px-4 font-semibold text-right">% COGS</th>
+                  <th class="py-3 px-4 font-semibold text-right">% Margin</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                ${sys.recipes
+                  .map((m) => {
+                    const selected = activeMenu && m.menuId === activeMenu.menuId;
+                    const cogsBadge =
+                      m.cogsPct <= 30
+                        ? 'text-emerald-700 bg-emerald-100'
+                        : m.cogsPct <= 40
+                        ? 'text-amber-800 bg-amber-100'
+                        : 'text-rose-700 bg-rose-100';
+                    return `
+                      <tr
+                        data-select-menu="${escapeHTML(m.menuId)}"
+                        class="cursor-pointer transition ${selected ? 'bg-peach/80 font-semibold' : 'hover:bg-cream/60'}"
+                      >
+                        <td class="py-3 px-4">
+                          <span class="font-mono text-xs px-2 py-0.5 rounded bg-white border border-peach mr-2">${escapeHTML(m.menuId)}</span>
+                          <span class="text-roast">${escapeHTML(m.menuName)}</span>
+                        </td>
+                        <td class="py-3 px-4 text-right tabular-nums">${formatTHB(m.sellingPrice)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums font-semibold text-roast">${formatTHB(m.totalCost)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums font-bold text-emerald-700">${formatTHB(m.grossProfit)}</td>
+                        <td class="py-3 px-4 text-right tabular-nums">
+                          <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${cogsBadge}">${m.cogsPct.toFixed(1)}%</span>
+                        </td>
+                        <td class="py-3 px-4 text-right tabular-nums font-semibold text-roast">${m.marginPct.toFixed(1)}%</td>
+                      </tr>
+                    `;
+                  })
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        ${
+          activeMenu
+            ? `<div class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-peach">
+                  <div>
+                    <span class="text-xs font-semibold text-espresso">กำลังแก้ไขสูตรชง</span>
+                    <h3 class="text-lg font-bold text-roast">[${escapeHTML(activeMenu.menuId)}] ${escapeHTML(activeMenu.menuName)}</h3>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <label class="text-xs font-semibold text-roast">ราคาขาย (฿):</label>
+                    <input
+                      id="active-menu-price"
+                      type="number"
+                      step="1"
+                      min="1"
+                      value="${activeMenu.sellingPrice}"
+                      class="w-24 px-3 py-1.5 rounded-xl border border-espresso/25 bg-cream/60 text-sm font-bold tabular-nums"
+                    />
+                    <button
+                      type="button"
+                      id="btn-save-menu-price"
+                      class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-espresso text-white hover:bg-espresso-dark transition"
+                    >
+                      อัปเดตราคา
+                    </button>
+                  </div>
+                </div>
+
+                <form id="add-ingredient-form" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-cream/70 p-3.5 rounded-xl border border-peach">
+                  <div class="sm:col-span-5">
+                    <label class="block text-xs font-semibold text-roast mb-1">วัตถุดิบในคลัง</label>
+                    <select
+                      id="ing-sku-select"
+                      class="w-full px-3 py-2 rounded-xl border border-espresso/25 bg-white text-xs sm:text-sm"
+                    >
+                      ${sys.inventory
+                        .map(
+                          (it) =>
+                            `<option value="${escapeHTML(it.sku)}">[${escapeHTML(it.sku)}] ${escapeHTML(it.name)} (${escapeHTML(it.unit)})</option>`
+                        )
+                        .join('')}
+                    </select>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-roast mb-1">ปริมาณ/แก้ว</label>
+                    <input
+                      id="ing-recipe-qty"
+                      type="number"
+                      step="any"
+                      min="0.001"
+                      required
+                      placeholder="18"
+                      class="w-full px-3 py-2 rounded-xl border border-espresso/25 bg-white text-xs sm:text-sm tabular-nums"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-roast mb-1">หน่วยชง</label>
+                    <input
+                      id="ing-unit-label"
+                      type="text"
+                      required
+                      value="g"
+                      placeholder="g / ml / ชุด"
+                      class="w-full px-3 py-2 rounded-xl border border-espresso/25 bg-white text-xs sm:text-sm"
+                    />
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-roast mb-1" title="จำนวนหน่วยย่อยต่อ 1 หน่วยสต็อกหลัก เช่น 1000g ต่อ 1 ถุง">ตัวคูณแปลงหน่วย</label>
+                    <input
+                      id="ing-pack-factor"
+                      type="number"
+                      step="any"
+                      min="0.001"
+                      required
+                      value="1000"
+                      class="w-full px-3 py-2 rounded-xl border border-espresso/25 bg-white text-xs sm:text-sm tabular-nums"
+                    />
+                  </div>
+                  <div class="sm:col-span-1">
+                    <button
+                      type="submit"
+                      class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-espresso hover:bg-espresso-dark text-white transition"
+                    >
+                      + เพิ่ม
+                    </button>
+                  </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                        <th class="py-2.5 px-4 font-semibold">วัตถุดิบ</th>
+                        <th class="py-2.5 px-4 font-semibold text-right">ใช้ต่อแก้ว</th>
+                        <th class="py-2.5 px-4 font-semibold text-right">ตัวคูณ</th>
+                        <th class="py-2.5 px-4 font-semibold text-right">ตัดสต็อก/แก้ว</th>
+                        <th class="py-2.5 px-4 font-semibold text-right">ต้นทุน/แก้ว</th>
+                        <th class="py-2.5 px-4 font-semibold text-right">ลบ</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                      ${
+                        activeMenu.lines.length === 0
+                          ? `<tr><td colspan="6" class="py-6 text-center text-roast/60">ยังไม่มีส่วนผสมในสูตรเมนูนี้</td></tr>`
+                          : activeMenu.lines
+                              .map(
+                                (ln, idx) => `
+                            <tr>
+                              <td class="py-2.5 px-4">
+                                <div class="font-semibold text-roast">${escapeHTML(ln.invName)}</div>
+                                <div class="text-[11px] font-mono text-roast/60">${escapeHTML(ln.sku)} · หน่วยคลัง: ${escapeHTML(ln.invUnit)}</div>
+                              </td>
+                              <td class="py-2.5 px-4 text-right tabular-nums">${formatQty(ln.recipeQty)} ${escapeHTML(ln.unitLabel)}</td>
+                              <td class="py-2.5 px-4 text-right tabular-nums">${formatQty(ln.packFactor)}</td>
+                              <td class="py-2.5 px-4 text-right tabular-nums font-medium text-espresso">${formatQty(ln.stockUsagePerCup)}</td>
+                              <td class="py-2.5 px-4 text-right tabular-nums font-bold text-roast">${formatTHB(ln.lineCost)}</td>
+                              <td class="py-2.5 px-4 text-right">
+                                <button
+                                  type="button"
+                                  data-del-ing="${idx}"
+                                  class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded hover:bg-rose-50"
+                                >
+                                  ลบ
+                                </button>
+                              </td>
+                            </tr>
+                          `
+                              )
+                              .join('')
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>`
+            : ''
+        }
+      `;
+
+      document.querySelectorAll('[data-select-menu]').forEach((row) => {
+        row.addEventListener('click', () => {
+          state.selectedMenuId = row.getAttribute('data-select-menu');
+          saveState({ skipAutoSync: true });
+        });
+      });
+
+      const savePriceBtn = document.getElementById('btn-save-menu-price');
+      if (savePriceBtn && activeMenu) {
+        savePriceBtn.addEventListener('click', () => {
+          const newPrice = Number(document.getElementById('active-menu-price').value);
+          if (isNaN(newPrice) || newPrice <= 0) {
+            showToast('กรุณาระบุราคาขายให้ถูกต้อง', 'warning');
+            return;
+          }
+          const targetMenu = state.recipes.find((m) => m.menuId === activeMenu.menuId);
+          if (targetMenu) {
+            targetMenu.sellingPrice = newPrice;
+            saveState();
+            showToast(`อัปเดตราคาขาย ${targetMenu.menuName} เป็น ${formatTHB(newPrice)} แล้ว`, 'success');
+          }
+        });
+      }
+
+      const addIngForm = document.getElementById('add-ingredient-form');
+      if (addIngForm && activeMenu) {
+        addIngForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const sku = document.getElementById('ing-sku-select').value;
+          const recipeQty = Number(document.getElementById('ing-recipe-qty').value);
+          const unitLabel = document.getElementById('ing-unit-label').value.trim() || 'หน่วย';
+          const packFactor = Number(document.getElementById('ing-pack-factor').value) || 1;
+          if (!sku || isNaN(recipeQty) || recipeQty <= 0) {
+            showToast('กรุณาระบุปริมาณวัตถุดิบต่อแก้ว', 'warning');
+            return;
+          }
+          const targetMenu = state.recipes.find((m) => m.menuId === activeMenu.menuId);
+          if (targetMenu) {
+            targetMenu.ingredients.push({ sku, recipeQty, unitLabel, packFactor });
+            saveState();
+            showToast('เพิ่มวัตถุดิบลงในสูตรชงเรียบร้อยแล้ว', 'success');
+          }
+        });
+      }
+
+      document.querySelectorAll('[data-del-ing]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (!activeMenu) return;
+          const idx = Number(btn.getAttribute('data-del-ing'));
+          const targetMenu = state.recipes.find((m) => m.menuId === activeMenu.menuId);
+          if (targetMenu && Array.isArray(targetMenu.ingredients)) {
+            targetMenu.ingredients.splice(idx, 1);
+            saveState();
+            showToast('ลบวัตถุดิบออกจากสูตรชงแล้ว', 'info');
+          }
+        });
+      });
+    }
+
+    function renderSales(sys) {
+      const deductedRows = Array.from(sys.autoSalesDeduct.entries())
+        .map(([sku, usedQty]) => {
+          const inv = sys.invMap.get(sku);
+          const unitCost = inv ? Number(inv.costPerUnit) || 0 : 0;
+          return {
+            sku,
+            name: inv ? inv.name : sku,
+            unit: inv ? inv.unit : '-',
+            usedQty,
+            usedValue: usedQty * unitCost,
+            remainingStock: inv ? inv.currentStock : 0,
+          };
+        })
+        .filter((r) => r.usedQty > 0);
+
+      document.getElementById('view-sales').innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <form id="sales-form" class="bg-white rounded-2xl border border-peach shadow-card p-5 space-y-4 h-fit">
+            <div>
+              <h3 class="text-base font-bold text-roast">บันทึกยอดขายเพื่อตัดสต็อกอัตโนมัติ</h3>
+              <p class="text-xs text-roast/65 mt-0.5">เมื่อบันทึกจำนวนแก้ว ระบบจะคำนวณและตัดวัตถุดิบตามสูตรชงทันที</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-roast mb-1">วันที่ขาย *</label>
+              <input
+                id="sale-date"
+                type="date"
+                required
+                value="${todayISO()}"
+                class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-roast mb-1">เลือกเมนู *</label>
+              <select
+                id="sale-menu-id"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+              >
+                ${sys.recipes
+                  .map(
+                    (m) =>
+                      `<option value="${escapeHTML(m.menuId)}">[${escapeHTML(m.menuId)}] ${escapeHTML(m.menuName)} — ${formatTHB(m.sellingPrice)} (ต้นทุน ${formatTHB(m.totalCost)})</option>`
+                  )
+                  .join('')}
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-roast mb-1">จำนวนแก้วที่ขายได้ *</label>
+                <input
+                  id="sale-cups"
+                  type="number"
+                  step="1"
+                  min="1"
+                  required
+                  value="5"
+                  class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm font-bold tabular-nums"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-roast mb-1">ช่องทางขาย</label>
+                <select
+                  id="sale-channel"
+                  class="w-full px-3.5 py-2 rounded-xl border border-espresso/25 bg-cream/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-espresso text-sm"
+                >
+                  <option value="หน้าร้าน / POS">หน้าร้าน / POS</option>
+                  <option value="Grab / LINE MAN">Grab / LINE MAN</option>
+                  <option value="ShopeeFood">ShopeeFood</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full py-2.5 rounded-xl text-sm font-semibold bg-espresso hover:bg-espresso-dark text-white shadow-sm transition active:scale-[0.99]"
+            >
+              บันทึกยอดขาย & ตัดสต็อก
+            </button>
+          </form>
+
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-2xl border border-peach shadow-card overflow-hidden">
+              <div class="px-5 py-4 border-b border-peach">
+                <h3 class="text-base font-bold text-roast">สรุปปริมาณวัตถุดิบที่ถูกตัดสต็อกจากการขาย (${deductedRows.length} SKU)</h3>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                      <th class="py-2.5 px-4 font-semibold">วัตถุดิบ / SKU</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">ยอดที่ตัดขาย</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">มูลค่าที่ตัด</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">คงเหลือปัจจุบัน</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                    ${
+                      deductedRows.length === 0
+                        ? `<tr><td colspan="4" class="py-6 text-center text-roast/60">ยังไม่มีการตัดสต็อกจากยอดขาย</td></tr>`
+                        : deductedRows
+                            .map(
+                              (r) => `
+                          <tr>
+                            <td class="py-2.5 px-4">
+                              <div class="font-semibold text-roast">${escapeHTML(r.name)}</div>
+                              <div class="text-[11px] font-mono text-roast/60">${escapeHTML(r.sku)} · ${escapeHTML(r.unit)}</div>
+                            </td>
+                            <td class="py-2.5 px-4 text-right font-bold text-espresso tabular-nums">-${formatQty(r.usedQty)}</td>
+                            <td class="py-2.5 px-4 text-right tabular-nums">${formatTHB(r.usedValue)}</td>
+                            <td class="py-2.5 px-4 text-right font-semibold tabular-nums">${formatQty(r.remainingStock)}</td>
+                          </tr>
+                        `
+                            )
+                            .join('')
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-peach shadow-card overflow-hidden">
+              <div class="px-5 py-4 border-b border-peach">
+                <h3 class="text-base font-bold text-roast">ประวัติการขายรายวัน (${sys.salesLogs.length} รายการ)</h3>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-cream text-roast/75 text-xs border-b border-peach">
+                      <th class="py-2.5 px-4 font-semibold">วันที่</th>
+                      <th class="py-2.5 px-4 font-semibold">เมนู</th>
+                      <th class="py-2.5 px-4 font-semibold">ช่องทาง</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">จำนวนแก้ว</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">ยอดขาย</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">กำไรขั้นต้น</th>
+                      <th class="py-2.5 px-4 font-semibold text-right">ลบ</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-peach/70 text-xs sm:text-sm">
+                    ${
+                      sys.salesLogs.length === 0
+                        ? `<tr><td colspan="7" class="py-6 text-center text-roast/60">ยังไม่มีรายการขาย</td></tr>`
+                        : [...sys.salesLogs]
+                            .reverse()
+                            .map(
+                              (s) => `
+                          <tr>
+                            <td class="py-2.5 px-4 whitespace-nowrap tabular-nums text-xs">${escapeHTML(s.date)}</td>
+                            <td class="py-2.5 px-4 font-semibold text-roast">${escapeHTML(s.menuName)}</td>
+                            <td class="py-2.5 px-4 text-xs text-roast/75">${escapeHTML(s.channel)}</td>
+                            <td class="py-2.5 px-4 text-right font-bold tabular-nums">${formatQty(s.cupsSold)}</td>
+                            <td class="py-2.5 px-4 text-right font-semibold tabular-nums">${formatTHB(s.revenue)}</td>
+                            <td class="py-2.5 px-4 text-right font-semibold text-emerald-700 tabular-nums">${formatTHB(s.gp)}</td>
+                            <td class="py-2.5 px-4 text-right">
+                              <button
+                                type="button"
+                                data-del-sale="${escapeHTML(s.id)}"
+                                class="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded hover:bg-rose-50"
+                              >
+                                ลบ
+                              </button>
+                            </td>
+                          </tr>
+                        `
+                            )
+                            .join('')
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('sales-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const date = document.getElementById('sale-date').value;
+        const menuId = document.getElementById('sale-menu-id').value;
+        const cupsSold = parseInt(document.getElementById('sale-cups').value, 10);
+        const channel = document.getElementById('sale-channel').value;
+        if (!menuId || isNaN(cupsSold) || cupsSold <= 0) {
+          showToast('กรุณาระบุจำนวนแก้วที่ขายได้อย่างน้อย 1 แก้ว', 'warning');
+          return;
+        }
+        state.salesLogs.push({
+          id: 'SLS-' + Date.now().toString().slice(-6),
+          date,
+          menuId,
+          cupsSold,
+          channel,
+        });
+        saveState();
+        showToast(`บันทึกยอดขาย ${cupsSold} แก้ว และตัดสต็อกตามสูตรชงแล้ว`, 'success');
+      });
+
+      document.querySelectorAll('[data-del-sale]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-del-sale');
+          state.salesLogs = state.salesLogs.filter((s) => s.id !== id);
+          saveState();
+          showToast('ลบรายการขายและคืนยอดตัดสต็อกแล้ว', 'info');
+        });
+      });
+    }
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      }
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+
+    function openQuickReorderModal(sku, sys) {
+      const item = sys.invMap.get(sku);
+      if (!item) return;
+      document.getElementById('reorder-sku').value = item.sku;
+      document.getElementById('reorder-modal-title').textContent = `รับเข้า: ${item.name}`;
+      document.getElementById('reorder-modal-subtitle').textContent = `รหัส ${item.sku} · คงเหลือปัจจุบัน ${formatQty(item.currentStock)} ${item.unit}`;
+      document.getElementById('reorder-unit-label').textContent = item.unit;
+      const suggested = item.recommendedOrder > 0 ? item.recommendedOrder : Math.max(1, Number(item.parLevel) || 1);
+      document.getElementById('reorder-qty').value = suggested;
+      document.getElementById('reorder-rec-text').textContent = `${formatQty(item.recommendedOrder)} ${item.unit} (Target ${formatQty(item.targetStock)})`;
+      document.getElementById('reorder-unit-cost').value = item.costPerUnit;
+      document.getElementById('reorder-note').value = `เติมสต็อกตามจุดสั่งซื้อ (${item.supplier || 'Supplier'})`;
+      openModal('quick-reorder-modal');
+    }
+
+    function openSkuModal(mode, skuCode = '') {
+      document.getElementById('sku-edit-mode').value = mode;
+      const codeInput = document.getElementById('sku-code');
+      if (mode === 'edit' && skuCode) {
+        const existing = state.inventory.find((i) => i.sku === skuCode);
+        if (!existing) return;
+        document.getElementById('sku-modal-title').textContent = `แก้ไขวัตถุดิบ (${existing.sku})`;
+        codeInput.value = existing.sku;
+        codeInput.readOnly = true;
+        document.getElementById('sku-name').value = existing.name;
+        document.getElementById('sku-category').value = existing.category;
+        document.getElementById('sku-unit').value = existing.unit;
+        document.getElementById('sku-cost').value = existing.costPerUnit;
+        document.getElementById('sku-opening').value = existing.openingStock;
+        document.getElementById('sku-par').value = existing.parLevel;
+        document.getElementById('sku-target').value = existing.targetStock ?? existing.parLevel * 2;
+        document.getElementById('sku-supplier').value = existing.supplier || '';
+      } else {
+        document.getElementById('sku-modal-title').textContent = 'เพิ่มวัตถุดิบใหม่ (SKU)';
+        document.getElementById('sku-form').reset();
+        codeInput.readOnly = false;
+        document.getElementById('sku-opening').value = '0';
+        document.getElementById('sku-par').value = '1';
+        document.getElementById('sku-target').value = '3';
+      }
+      openModal('sku-modal');
+    }
+
+    function openSheetsModal() {
+      const cfg = state.sheetsConfig || { webAppUrl: '', autoSync: true, autoPullOnLoad: true };
+      document.getElementById('sheets-webapp-url').value = cfg.webAppUrl || '';
+      document.getElementById('sheets-autosync-toggle').checked = cfg.autoSync !== false;
+      document.getElementById('sheets-autopull-toggle').checked = cfg.autoPullOnLoad !== false;
+      document.getElementById('apps-script-code-preview').textContent = APPS_SCRIPT_TEMPLATE;
+      setSheetsModalTab('settings');
+      updateSheetsStatusUI();
+      openModal('sheets-sync-modal');
+    }
+
+    function setSheetsModalTab(tabName) {
+      const tabSettings = document.getElementById('sheets-tab-settings');
+      const tabScript = document.getElementById('sheets-tab-script');
+      const panelSettings = document.getElementById('sheets-panel-settings');
+      const panelScript = document.getElementById('sheets-panel-script');
+      if (tabName === 'script') {
+        tabScript.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-espresso text-white transition';
+        tabSettings.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-peach/70 text-roast hover:bg-peach transition';
+        panelScript.classList.remove('hidden');
+        panelSettings.classList.add('hidden');
+      } else {
+        tabSettings.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-espresso text-white transition';
+        tabScript.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-peach/70 text-roast hover:bg-peach transition';
+        panelSettings.classList.remove('hidden');
+        panelScript.classList.add('hidden');
+      }
+    }
+
+    function renderAll() {
+      const sys = computeSystemState();
+      renderNav();
+      updateSheetsStatusUI();
+
+      const headerActions = document.getElementById('view-header-actions');
+      headerActions.innerHTML = '';
+
+      const meta = NAV_ITEMS.find((n) => n.id === state.activeTab) || NAV_ITEMS[0];
+      document.getElementById('view-title').textContent = meta.label;
+      document.getElementById('view-subtitle').textContent = meta.desc;
+
+      const sections = {
+        dashboard: 'view-dashboard',
+        inventory: 'view-inventory',
+        movement: 'view-movement',
+        'daily-count': 'view-daily-count',
+        recipes: 'view-recipes',
+        sales: 'view-sales',
+      };
+      Object.entries(sections).forEach(([key, secId]) => {
+        const el = document.getElementById(secId);
+        if (key === state.activeTab) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+
+      if (state.activeTab === 'dashboard') renderDashboard(sys);
+      else if (state.activeTab === 'inventory') renderInventory(sys);
+      else if (state.activeTab === 'movement') renderMovement(sys);
+      else if (state.activeTab === 'daily-count') renderDailyCount(sys);
+      else if (state.activeTab === 'recipes') renderRecipes(sys);
+      else if (state.activeTab === 'sales') renderSales(sys);
+    }
+
+    function exportCSV(sys) {
+      const headers = [
+        'SKU',
+        'Item Name',
+        'Category',
+        'Unit',
+        'Unit Cost',
+        'Opening',
+        'In',
+        'Manual Out',
+        'Auto Sales Deduct',
+        'Waste',
+        'Current Stock',
+        'Stock Value',
+        'Par Level',
+        'Recommended Order',
+        'Status',
+        'Supplier',
+      ];
+      const rows = sys.inventory.map((i) => [
+        i.sku,
+        i.name,
+        i.category,
+        i.unit,
+        i.costPerUnit,
+        i.openingStock,
+        i.stockIn,
+        i.stockManualOut,
+        i.stockAutoSalesOut,
+        i.stockWaste,
+        i.currentStock,
+        i.stockValue,
+        i.parLevel,
+        i.recommendedOrder,
+        i.statusLabel,
+        i.supplier,
+      ]);
+      const csvContent =
+        '\uFEFF' +
+        [headers, ...rows]
+          .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+          .join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `coffee-stock-inventory-${todayISO()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('ส่งออกไฟล์ CSV เรียบร้อยแล้ว', 'success');
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `coffee-stock-backup-${todayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('สำรองข้อมูลเป็นไฟล์ JSON เรียบร้อยแล้ว', 'success');
+    }
+
+    function handleImportJSON(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          const def = createDefaultData();
+          state = {
+            ...def,
+            ...parsed,
+            sheetsConfig: {
+              webAppUrl: String(parsed?.sheetsConfig?.webAppUrl ?? state.sheetsConfig?.webAppUrl ?? '').trim(),
+              autoSync: parsed?.sheetsConfig?.autoSync !== undefined ? Boolean(parsed.sheetsConfig.autoSync) : true,
+              autoPullOnLoad: parsed?.sheetsConfig?.autoPullOnLoad !== undefined ? Boolean(parsed.sheetsConfig.autoPullOnLoad) : true,
+            },
+            updatedAt: new Date().toISOString(),
+          };
+          saveState();
+          showToast('นำเข้าข้อมูลจากไฟล์ JSON สำเร็จแล้ว', 'success');
+        } catch (err) {
+          showToast('ไฟล์ JSON ไม่ถูกต้อง: ' + err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function bindGlobalEvents() {
+      document.getElementById('mobile-menu-btn').addEventListener('click', openMobileSidebar);
+      document.getElementById('close-sidebar-btn').addEventListener('click', closeMobileSidebar);
+      document.getElementById('mobile-backdrop').addEventListener('click', closeMobileSidebar);
+
+      document.getElementById('btn-export-csv').addEventListener('click', () => exportCSV(computeSystemState()));
+      document.getElementById('mobile-export-csv').addEventListener('click', () => exportCSV(computeSystemState()));
+
+      document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+      document.getElementById('mobile-export-json').addEventListener('click', exportJSON);
+
+      document.getElementById('input-import-json').addEventListener('change', (e) => {
+        handleImportJSON(e.target.files[0]);
+        e.target.value = '';
+      });
+      document.getElementById('mobile-import-json').addEventListener('change', (e) => {
+        handleImportJSON(e.target.files[0]);
+        e.target.value = '';
+      });
+
+      document.getElementById('btn-reset-demo').addEventListener('click', () => {
+        if (!confirm('ยืนยันรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าตัวอย่างเริ่มต้น?')) return;
+        const preservedConfig = { ...(state.sheetsConfig || {}) };
+        state = createDefaultData();
+        state.sheetsConfig = {
+          webAppUrl: preservedConfig.webAppUrl || '',
+          autoSync: preservedConfig.autoSync !== undefined ? preservedConfig.autoSync : true,
+          autoPullOnLoad: preservedConfig.autoPullOnLoad !== undefined ? preservedConfig.autoPullOnLoad : true,
+        };
+        if (state.sheetsConfig.webAppUrl) {
+          state.syncStatus = 'synced';
+        }
+        saveState();
+        showToast('รีเซ็ตข้อมูลตัวอย่างเริ่มต้นเรียบร้อยแล้ว', 'info');
+      });
+
+      document.getElementById('btn-open-sheets-modal').addEventListener('click', openSheetsModal);
+      document.getElementById('close-sheets-modal').addEventListener('click', () => closeModal('sheets-sync-modal'));
+      document.getElementById('sheets-tab-settings').addEventListener('click', () => setSheetsModalTab('settings'));
+      document.getElementById('sheets-tab-script').addEventListener('click', () => setSheetsModalTab('script'));
+
+      document.getElementById('btn-copy-apps-script').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(APPS_SCRIPT_TEMPLATE);
+          showToast('คัดลอกโค้ด Apps Script (6 ชีทเดิม) แล้ว', 'success');
+        } catch (_) {
+          showToast('ไม่สามารถคัดลอกอัตโนมัติได้ กรุณาเลือกและคัดลอกข้อความในกล่องโค้ด', 'warning');
+        }
+      });
+
+      document.getElementById('btn-save-sheets-config').addEventListener('click', () => {
+        const rawUrl = document.getElementById('sheets-webapp-url').value.trim();
+        const autoSync = document.getElementById('sheets-autosync-toggle').checked;
+        const autoPullOnLoad = document.getElementById('sheets-autopull-toggle').checked;
+        state.sheetsConfig = {
+          webAppUrl: rawUrl,
+          autoSync,
+          autoPullOnLoad,
+        };
+        if (!rawUrl) {
+          state.syncStatus = 'not_configured';
+          state.syncQueue = [];
+        } else if (state.syncStatus === 'not_configured') {
+          state.syncStatus = 'synced';
+        }
+        saveState({ skipAutoSync: true });
+        updateSheetsStatusUI();
+        showToast('บันทึกการตั้งค่า Google Sheets เรียบร้อยแล้ว', 'success');
+      });
+
+      document.getElementById('btn-test-sheets').addEventListener('click', () => {
+        const currentInputUrl = document.getElementById('sheets-webapp-url').value.trim();
+        pingSheetsConnection(currentInputUrl);
+      });
+
+      document.getElementById('btn-pull-sheets').addEventListener('click', async () => {
+        const currentInputUrl = document.getElementById('sheets-webapp-url').value.trim();
+        if (currentInputUrl) {
+          state.sheetsConfig.webAppUrl = currentInputUrl;
+          persistLocalOnly();
+        }
+        await pullStateFromSheets(false);
+      });
+
+      document.getElementById('btn-push-sheets').addEventListener('click', async () => {
+        const currentInputUrl = document.getElementById('sheets-webapp-url').value.trim();
+        if (currentInputUrl) {
+          state.sheetsConfig.webAppUrl = currentInputUrl;
+        }
+        enqueueSyncSnapshot();
+        await flushSyncQueue(false);
+      });
+
+      window.addEventListener('online', () => {
+        if (state.sheetsConfig && state.sheetsConfig.webAppUrl && state.syncQueue.length > 0) {
+          flushSyncQueue(true);
+        }
+      });
+
+      document.getElementById('close-reorder-modal').addEventListener('click', () => closeModal('quick-reorder-modal'));
+      document.getElementById('cancel-reorder-modal').addEventListener('click', () => closeModal('quick-reorder-modal'));
+      document.getElementById('quick-reorder-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sku = document.getElementById('reorder-sku').value;
+        const qty = Number(document.getElementById('reorder-qty').value);
+        const unitCost = Number(document.getElementById('reorder-unit-cost').value) || 0;
+        const staff = document.getElementById('reorder-staff').value.trim() || 'Barista';
+        const note = document.getElementById('reorder-note').value.trim() || 'รับเข้าด่วน';
+        if (!sku || isNaN(qty) || qty <= 0) return;
+
+        state.movements.push({
+          id: 'MOV-' + Date.now().toString().slice(-6),
+          date: todayISO(),
+          type: 'รับเข้า',
+          sku,
+          qty,
+          unitCost,
+          staff,
+          note,
+        });
+        closeModal('quick-reorder-modal');
+        saveState();
+        showToast(`รับเข้า ${sku} จำนวน ${formatQty(qty)} เรียบร้อยแล้ว`, 'success');
+      });
+
+      document.getElementById('close-sku-modal').addEventListener('click', () => closeModal('sku-modal'));
+      document.getElementById('cancel-sku-modal').addEventListener('click', () => closeModal('sku-modal'));
+      document.getElementById('sku-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const mode = document.getElementById('sku-edit-mode').value;
+        const sku = document.getElementById('sku-code').value.trim().toUpperCase();
+        const name = document.getElementById('sku-name').value.trim();
+        const category = document.getElementById('sku-category').value;
+        const unit = document.getElementById('sku-unit').value.trim();
+        const costPerUnit = Number(document.getElementById('sku-cost').value) || 0;
+        const openingStock = Number(document.getElementById('sku-opening').value) || 0;
+        const parLevel = Number(document.getElementById('sku-par').value) || 0;
+        const targetStock = Number(document.getElementById('sku-target').value) || parLevel * 2;
+        const supplier = document.getElementById('sku-supplier').value.trim();
+
+        if (!sku || !name || !unit) {
+          showToast('กรุณากรอกข้อมูล SKU, ชื่อวัตถุดิบ และหน่วยให้ครบถ้วน', 'warning');
+          return;
+        }
+
+        if (mode === 'add') {
+          if (state.inventory.some((i) => i.sku === sku)) {
+            showToast(`รหัส SKU "${sku}" มีอยู่แล้วในระบบ`, 'error');
+            return;
+          }
+          state.inventory.push({
+            sku,
+            name,
+            category,
+            unit,
+            costPerUnit,
+            openingStock,
+            parLevel,
+            targetStock,
+            supplier,
+          });
+          showToast(`เพิ่ม SKU "${sku}" เรียบร้อยแล้ว`, 'success');
+        } else {
+          const idx = state.inventory.findIndex((i) => i.sku === sku);
+          if (idx !== -1) {
+            state.inventory[idx] = {
+              ...state.inventory[idx],
+              name,
+              category,
+              unit,
+              costPerUnit,
+              openingStock,
+              parLevel,
+              targetStock,
+              supplier,
+            };
+            showToast(`อัปเดต SKU "${sku}" เรียบร้อยแล้ว`, 'success');
+          }
+        }
+        closeModal('sku-modal');
+        saveState();
+      });
+
+      document.getElementById('close-menu-modal').addEventListener('click', () => closeModal('menu-modal'));
+      document.getElementById('cancel-menu-modal').addEventListener('click', () => closeModal('menu-modal'));
+      document.getElementById('menu-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const menuId = document.getElementById('new-menu-id').value.trim().toUpperCase();
+        const category = document.getElementById('new-menu-cat').value;
+        const menuName = document.getElementById('new-menu-name').value.trim();
+        const sellingPrice = Number(document.getElementById('new-menu-price').value) || 0;
+
+        if (!menuId || !menuName || sellingPrice <= 0) {
+          showToast('กรุณากรอกรหัสเมนู ชื่อเมนู และราคาขายให้ถูกต้อง', 'warning');
+          return;
+        }
+        if (state.recipes.some((m) => m.menuId === menuId)) {
+          showToast(`รหัสเมนู "${menuId}" มีอยู่แล้ว`, 'error');
+          return;
+        }
+
+        state.recipes.push({
+          menuId,
+          menuName,
+          category,
+          sellingPrice,
+          ingredients: [],
+        });
+        state.selectedMenuId = menuId;
+        closeModal('menu-modal');
+        saveState();
+        showToast(`สร้างเมนู "${menuName}" แล้ว สามารถเพิ่มส่วนผสมในสูตรชงต่อได้เลย`, 'success');
+      });
+    }
+
+    bindGlobalEvents();
+    persistLocalOnly();
+    renderAll();
+
+    if (state.sheetsConfig && state.sheetsConfig.webAppUrl) {
+      if (state.syncQueue.length > 0 && navigator.onLine) {
+        flushSyncQueue(true);
+      } else if (state.sheetsConfig.autoPullOnLoad !== false && navigator.onLine) {
+        pullStateFromSheets(true);
+      }
+    }
+  </script>
+</body>
+</html>
